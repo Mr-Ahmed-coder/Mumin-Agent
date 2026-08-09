@@ -2,6 +2,9 @@
   "name": "mumin-agent-backend",
   "version": "1.0.0",
   "description": "Agent Cash Exchange Management System Backend",
+  "engines": {
+    "node": "22.x"
+  },
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
