@@ -49,6 +49,15 @@ app.use(cookieParser());
 // API Routes
 const API_PREFIX = '/api/v1';
 
+// Friendly root response for hosting platforms and direct browser visits.
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Mumin Agent API is running',
+    health: `${API_PREFIX}/health`,
+  });
+});
+
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(`${API_PREFIX}/customers`, customerRoutes);
