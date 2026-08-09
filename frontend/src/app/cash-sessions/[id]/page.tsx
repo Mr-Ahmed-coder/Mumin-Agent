@@ -1,0 +1,299 @@
+'use client';
+
+import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Sidebar from '@/components/layout/Sidebar';
+import Navbar from '@/components/layout/Navbar';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { CashSession, Transaction, WALLET_LABELS } from '@/types';
+import { useAuth } from '@/providers/AuthProvider';
+import {
+  Wallet,
+  ArrowLeft,
+  Lock,
+  RefreshCw,
+  Clock,
+  User,
+  PlusCircle,
+  MinusCircle,
+  AlertTriangle,
+  CheckCircle,
+} from 'lucide-react';
+import Link from 'next/link';
+
+export default function SessionDetailsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const id = params.id as string;
+
+  const [reopenError, setReopenError] = useState('');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['cashSessionDetails', id],
+    queryFn: async () => {
+      const res = await api.get(`/cash-sessions/${id}`);
+      return res.data.data;
+    },
+  });
+
+  const reopenMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.post(`/cash-sessions/${id}/reopen`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cashSessionDetails', id] });
+      queryClient.invalidateQueries({ queryKey: ['activeCashSession'] });
+      queryClient.invalidateQueries({ queryKey: ['cashSessionsList'] });
+      setReopenError('');
+    },
+    onError: (err: any) => {
+      setReopenError(err.response?.data?.message || 'Failed to reopen session');
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-slate-950">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Navbar />
+          <div className="p-8 text-center text-slate-500">Loading session details...</div>
+        </div>
+      </div>
+    );
+  }
+
+  const session: CashSession = data?.session;
+  const transactions: Transaction[] = data?.transactions || [];
+  const totalCashPaidOut: number = data?.totalCashPaidOut || 0;
+  const totalCashAdded: number = data?.totalCashAdded || 0;
+  const totalCashWithdrawn: number = data?.totalCashWithdrawn || 0;
+  const expectedClosingCash: number = data?.expectedClosingCash || 0;
+
+  if (!session) {
+    return (
+      <div className="flex min-h-screen bg-slate-950">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Navbar />
+          <div className="p-8 text-center text-slate-500">Session not found.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const isManagerOrAdmin = user && (user.role === 'ADMIN' || user.role === 'MANAGER');
+
+  return (
+    <div className="flex min-h-screen bg-slate-950">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Navbar />
+
+        <main className="p-8 space-y-8 flex-1 max-w-6xl mx-auto w-full">
+          {/* Header & Back Button */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/cash-sessions"
+                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono text-emerald-400 font-bold">
+                    {session.sessionNumber}
+                  </span>
+                  <span
+                    className={`px-2.5 py-0.5 text-xs font-bold rounded-full border uppercase ${
+                      session.status === 'OPEN'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 animate-pulse'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}
+                  >
+                    {session.status}
+                  </span>
+                </div>
+                <h1 className="text-2xl font-bold text-white tracking-tight mt-1">
+                  Cash Shift Audit & Details
+                </h1>
+              </div>
+            </div>
+
+            {/* Reopen Action Button for Admin/Manager */}
+            {session.status === 'CLOSED' && isManagerOrAdmin && (
+              <button
+                disabled={reopenMutation.isPending}
+                onClick={() => reopenMutation.mutate()}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-amber-600/20 transition-all self-start"
+              >
+                <RefreshCw className="w-4 h-4" />
+                {reopenMutation.isPending ? 'Reopening...' : 'Reopen Session (Manager)'}
+              </button>
+            )}
+          </div>
+
+          {reopenError && (
+            <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl">
+              {reopenError}
+            </div>
+          )}
+
+          {/* Session Overview Card */}
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <User className="w-5 h-5 text-emerald-400 shrink-0" />
+                <div>
+                  <span className="text-slate-400">Cashier:</span>
+                  <div className="font-bold text-white text-sm">{(session.cashierId as any)?.name || 'Cashier'}</div>
+                  <div className="text-[10px] text-slate-500 uppercase">{(session.cashierId as any)?.role}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <Clock className="w-5 h-5 text-teal-400 shrink-0" />
+                <div>
+                  <span className="text-slate-400">Opened Time:</span>
+                  <div className="font-bold text-slate-200">{new Date(session.openedAt).toLocaleString()}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <Lock className="w-5 h-5 text-slate-400 shrink-0" />
+                <div>
+                  <span className="text-slate-400">Closed Time:</span>
+                  <div className="font-bold text-slate-200">
+                    {session.closedAt ? new Date(session.closedAt).toLocaleString() : 'Still Active'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Financial Breakdown Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-1">
+              <span className="text-xs font-semibold text-slate-400 uppercase">Opening Cash (UGX)</span>
+              <p className="text-2xl font-extrabold text-white">UGX {session.openingCash.toLocaleString()}</p>
+            </div>
+
+            <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-1">
+              <span className="text-xs font-semibold text-slate-400 uppercase">Total Cash Paid Out</span>
+              <p className="text-2xl font-extrabold text-blue-400">UGX {totalCashPaidOut.toLocaleString()}</p>
+              <p className="text-[11px] text-slate-500">{transactions.length} Transactions processed</p>
+            </div>
+
+            <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-1">
+              <span className="text-xs font-semibold text-slate-400 uppercase">In-Shift Cash Adjustments (UGX)</span>
+              <p className="text-sm font-bold text-emerald-400">UGX +{totalCashAdded.toLocaleString()} Added</p>
+              <p className="text-sm font-bold text-amber-400">UGX -{totalCashWithdrawn.toLocaleString()} Withdrawn</p>
+            </div>
+
+            <div className="p-5 bg-slate-900 border border-emerald-500/30 rounded-2xl shadow-xl space-y-1">
+              <span className="text-xs font-semibold text-emerald-400 uppercase">Expected Closing Cash (UGX)</span>
+              <p className="text-2xl font-extrabold text-emerald-400">UGX {expectedClosingCash.toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Reconciled Actual vs Difference Box */}
+          {session.status === 'CLOSED' && (
+            <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4">
+              <h3 className="text-base font-bold text-white">Reconciliation Summary</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800">
+                  <span className="text-xs text-slate-400">Expected Closing Cash (UGX):</span>
+                  <p className="text-xl font-bold text-slate-200 mt-1">
+                    UGX {(session.closingCashSystem ?? expectedClosingCash).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800">
+                  <span className="text-xs text-slate-400">Actual Closing Cash (UGX):</span>
+                  <p className="text-xl font-bold text-emerald-400 mt-1">
+                    UGX {(session.closingCashActual ?? 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800">
+                  <span className="text-xs text-slate-400">Cash Difference (UGX):</span>
+                  <p className="text-xl font-extrabold mt-1">
+                    {session.discrepancy === undefined || session.discrepancy === 0 ? (
+                      <span className="text-emerald-400">UGX 0 (Perfect Match)</span>
+                    ) : session.discrepancy < 0 ? (
+                      <span className="text-red-400">UGX -{Math.abs(session.discrepancy).toLocaleString()} (Shortage)</span>
+                    ) : (
+                      <span className="text-amber-400">UGX +{session.discrepancy.toLocaleString()} (Overage)</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Transactions Belonging to Session */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-6 space-y-4">
+            <h3 className="text-base font-bold text-white">Shift Transactions Ledger</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-xs uppercase text-slate-400 font-semibold bg-slate-950/50">
+                    <th className="py-3 px-4">Txn No.</th>
+                    <th className="py-3 px-4">Customer</th>
+                    <th className="py-3 px-4">Wallet Provider</th>
+                    <th className="py-3 px-4 text-right">Received (USD)</th>
+                    <th className="py-3 px-4 text-right">Fee (USD)</th>
+                    <th className="py-3 px-4 text-right">Cash Paid (UGX)</th>
+                    <th className="py-3 px-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-sm">
+                  {transactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-6 text-center text-slate-500">
+                        No transactions recorded during this shift.
+                      </td>
+                    </tr>
+                  ) : (
+                    transactions.map((t) => (
+                      <tr key={t._id} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="py-3 px-4 font-mono text-emerald-400 font-semibold text-xs">
+                          {t.transactionNumber}
+                        </td>
+                        <td className="py-3 px-4 font-medium text-slate-200">
+                          {(t.customerId as any)?.name || 'Customer'}
+                        </td>
+                        <td className="py-3 px-4 text-slate-300">
+                          <span className="px-2 py-0.5 rounded bg-slate-800 text-xs">
+                            {WALLET_LABELS[t.walletProvider] || t.walletProvider}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right font-semibold text-slate-100">
+                          USD {(t.amountReceivedUSD ?? t.amountReceived).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 text-right font-medium text-teal-400">
+                          USD {(t.serviceFeeUSD ?? t.serviceFee).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-emerald-400">
+                          UGX {(t.cashPaidUGX ?? t.cashPaid).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            {t.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,16 @@
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
+  CASHIER = 'CASHIER',
+}
+
+export const PERMISSIONS = {
+  MANAGE_USERS: [UserRole.ADMIN],
+  MANAGE_FEE_RULES: [UserRole.ADMIN, UserRole.MANAGER],
+  CANCEL_TRANSACTIONS: [UserRole.ADMIN, UserRole.MANAGER],
+  VIEW_AUDIT_LOGS: [UserRole.ADMIN],
+  VIEW_REPORTS: [UserRole.ADMIN, UserRole.MANAGER],
+  CREATE_TRANSACTION: [UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER],
+  MANAGE_CUSTOMERS: [UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER],
+  MANAGE_CASH_SESSION: [UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER],
+};
