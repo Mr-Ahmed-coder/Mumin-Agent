@@ -15,6 +15,8 @@ import {
   LogOut,
   Building2,
   PlusCircle,
+  Wifi,
+  Landmark,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -30,6 +32,8 @@ export default function Sidebar() {
     { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight },
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Cash Session', href: '/cash-sessions', icon: Wallet },
+    { name: 'Internet Credit', href: '/internet-credit', icon: Wifi },
+    { name: 'Customer Deposits', href: '/customer-deposits', icon: Landmark },
   ];
 
   const adminNav = [
@@ -37,6 +41,8 @@ export default function Sidebar() {
     { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight },
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Cash Sessions', href: '/cash-sessions', icon: Wallet },
+    { name: 'Internet Credit', href: '/internet-credit', icon: Wifi },
+    { name: 'Customer Deposits', href: '/customer-deposits', icon: Landmark },
     { name: 'Exchange Rate', href: '/exchange-rate', icon: Calculator },
     { name: 'Fee Rules', href: '/fee-rules', icon: Calculator },
     { name: 'User Staff', href: '/users', icon: UserCog },

@@ -5,6 +5,8 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { UserRole } from '../constants/roles';
+import { WalletProvider } from '../constants/wallets';
+import { AuditLog } from '../models/AuditLog';
 
 const cashPaidUGX = (transaction: any): number =>
   transaction.cashPaidUGX ?? transaction.cashPaid ?? 0;
@@ -77,6 +79,9 @@ export const getCashSessionById = asyncHandler(async (req: Request, res: Respons
 export const openCashSession = asyncHandler(async (req: Request, res: Response) => {
   const cashierId = req.user?.id;
   const openingCash = Number(req.body.openingCash);
+  const evcOpeningBalanceUSD = Number(req.body.evcOpeningBalanceUSD);
+  const mobileMoneyOpeningBalanceUSD = Number(req.body.mobileMoneyOpeningBalanceUSD);
+  const mobileMoneyProvider = req.body.mobileMoneyProvider as WalletProvider;
 
   if (isNaN(openingCash) || openingCash < 0) {
     throw ApiError.badRequest('Opening cash (UGX) must be a non-negative whole amount');
@@ -97,8 +102,25 @@ export const openCashSession = asyncHandler(async (req: Request, res: Response) 
     sessionNumber,
     currency: 'UGX',
     openingCash,
+    openingBalances: [
+      { accountType: 'PHYSICAL_CASH', provider: 'CASH_DRAWER', currency: 'UGX', amount: openingCash },
+      { accountType: 'EVC', provider: WalletProvider.HORMUUD_EVC_PLUS, currency: 'USD', amount: evcOpeningBalanceUSD },
+      { accountType: 'MOBILE_MONEY', provider: mobileMoneyProvider, currency: 'USD', amount: mobileMoneyOpeningBalanceUSD },
+    ],
     closingCashSystem: openingCash,
     notes: req.body.notes,
+  });
+
+  await AuditLog.create({
+    userId: req.user?.id,
+    userName: req.user?.name,
+    userRole: req.user?.role,
+    action: 'OPENING_BALANCES_RECORDED',
+    resource: 'cash-sessions',
+    resourceId: String(session._id),
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'],
+    details: { openingBalances: session.openingBalances },
   });
 
   return ApiResponse.created(res, 'Cash session opened successfully', session);

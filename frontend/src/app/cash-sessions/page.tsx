@@ -5,7 +5,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { CashSession } from '@/types';
+import { CashSession, WALLET_LABELS, WalletProvider } from '@/types';
 import {
   Wallet,
   PlusCircle,
@@ -27,6 +27,9 @@ export default function CashSessionsPage() {
 
   // Form states
   const [amount, setAmount] = useState<number | ''>('');
+  const [evcOpeningBalance, setEvcOpeningBalance] = useState<number | ''>('');
+  const [mobileMoneyOpeningBalance, setMobileMoneyOpeningBalance] = useState<number | ''>('');
+  const [mobileMoneyProvider, setMobileMoneyProvider] = useState<WalletProvider>('TELESOM_ZAAD');
   const [reason, setReason] = useState('');
   const [closingActual, setClosingActual] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
@@ -55,6 +58,9 @@ export default function CashSessionsPage() {
     mutationFn: async () => {
       const res = await api.post('/cash-sessions/open', {
         openingCash: Number(amount),
+        evcOpeningBalanceUSD: Number(evcOpeningBalance),
+        mobileMoneyOpeningBalanceUSD: Number(mobileMoneyOpeningBalance),
+        mobileMoneyProvider,
         notes: notes || undefined,
       });
       return res.data;
@@ -119,6 +125,9 @@ export default function CashSessionsPage() {
   const resetForm = () => {
     setAmount('');
     setReason('');
+    setEvcOpeningBalance('');
+    setMobileMoneyOpeningBalance('');
+    setMobileMoneyProvider('TELESOM_ZAAD');
     setClosingActual('');
     setNotes('');
     setError('');
@@ -199,11 +208,26 @@ export default function CashSessionsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
                 <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800">
                   <span className="text-xs font-semibold text-slate-400 uppercase">Opening Cash (UGX)</span>
                   <p className="text-2xl font-extrabold text-white mt-2">
                     UGX {activeSession.openingCash.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800">
+                  <span className="text-xs font-semibold text-slate-400 uppercase">EVC Opening (USD)</span>
+                  <p className="text-2xl font-extrabold text-white mt-2">
+                    USD {(activeSession.openingBalances?.find((b) => b.accountType === 'EVC')?.amount || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800">
+                  <span className="text-xs font-semibold text-slate-400 uppercase">Mobile Money Opening (USD)</span>
+                  <p className="text-2xl font-extrabold text-white mt-2">
+                    USD {(activeSession.openingBalances?.find((b) => b.accountType === 'MOBILE_MONEY')?.amount || 0).toLocaleString()}
+                  </p>
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    {WALLET_LABELS[activeSession.openingBalances?.find((b) => b.accountType === 'MOBILE_MONEY')?.provider as WalletProvider] || 'Provider'}
                   </p>
                 </div>
                 <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800">
@@ -347,6 +371,53 @@ export default function CashSessionsPage() {
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                    EVC Opening Balance (USD) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={evcOpeningBalance}
+                    onChange={(e) => setEvcOpeningBalance(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="e.g. 1,500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                    Mobile Money Opening (USD) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={mobileMoneyOpeningBalance}
+                    onChange={(e) => setMobileMoneyOpeningBalance(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="e.g. 800"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                  Mobile Money Provider *
+                </label>
+                <select
+                  value={mobileMoneyProvider}
+                  onChange={(e) => setMobileMoneyProvider(e.target.value as WalletProvider)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                >
+                  {Object.entries(WALLET_LABELS)
+                    .filter(([provider]) => provider !== 'HORMUUD_EVC_PLUS')
+                    .map(([provider, label]) => <option key={provider} value={provider}>{label}</option>)}
+                </select>
+                <p className="mt-1.5 text-[11px] text-slate-500">Digital wallet balances follow the current USD wallet configuration.</p>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
                   Notes (Optional)
@@ -366,7 +437,7 @@ export default function CashSessionsPage() {
                 Cancel
               </button>
               <button
-                disabled={!amount || openSessionMutation.isPending}
+                disabled={amount === '' || evcOpeningBalance === '' || mobileMoneyOpeningBalance === '' || openSessionMutation.isPending}
                 onClick={() => openSessionMutation.mutate()}
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/20 disabled:opacity-50"
               >

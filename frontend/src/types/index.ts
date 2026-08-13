@@ -108,6 +108,12 @@ export interface CashSession {
   cashierId: User | string;
   status: 'OPEN' | 'CLOSED';
   openingCash: number;
+  openingBalances?: Array<{
+    accountType: 'PHYSICAL_CASH' | 'EVC' | 'MOBILE_MONEY';
+    provider: 'CASH_DRAWER' | WalletProvider;
+    currency: 'UGX' | 'USD';
+    amount: number;
+  }>;
   closingCashSystem: number;
   closingCashActual?: number;
   discrepancy?: number;
@@ -117,6 +123,55 @@ export interface CashSession {
   openedAt: string;
   closedAt?: string;
   notes?: string;
+}
+
+export interface InternetCreditPayment {
+  _id: string;
+  amountUGX: number;
+  paidAt: string;
+  recordedBy: User | string;
+  notes?: string;
+  balanceAfterPaymentUGX: number;
+}
+
+export interface InternetCredit {
+  _id: string;
+  customerName: string;
+  phone?: string;
+  originalAmountUGX: number;
+  amountPaidUGX: number;
+  remainingBalanceUGX: number;
+  description?: string;
+  dateGiven: string;
+  status: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
+  payments: InternetCreditPayment[];
+  createdBy: User | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerDepositMovement {
+  _id: string;
+  type: 'DEPOSIT' | 'WITHDRAWAL';
+  amountUGX: number;
+  occurredAt: string;
+  recordedBy: User | string;
+  notes?: string;
+  balanceAfterTransactionUGX: number;
+}
+
+export interface CustomerDeposit {
+  _id: string;
+  customerName: string;
+  phone: string;
+  totalDepositedUGX: number;
+  totalWithdrawnUGX: number;
+  currentBalanceUGX: number;
+  notes?: string;
+  ledger: CustomerDepositMovement[];
+  createdBy: User | string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DashboardStats {

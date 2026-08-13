@@ -1,4 +1,12 @@
 import { Schema, model, Document, Types } from 'mongoose';
+import { WalletProvider } from '../constants/wallets';
+
+export interface IOpeningBalance {
+  accountType: 'PHYSICAL_CASH' | 'EVC' | 'MOBILE_MONEY';
+  provider: 'CASH_DRAWER' | WalletProvider;
+  currency: 'UGX' | 'USD';
+  amount: number;
+}
 
 export interface ICashAdjustment {
   amount: number;
@@ -14,6 +22,7 @@ export interface ICashSession extends Document {
   currency: 'UGX';
   status: 'OPEN' | 'CLOSED';
   openingCash: number; // UGX
+  openingBalances: IOpeningBalance[];
   cashAdded: ICashAdjustment[];
   cashWithdrawn: ICashAdjustment[];
   closingCashSystem: number; // UGX
@@ -39,6 +48,16 @@ const CashAdjustmentSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+const OpeningBalanceSchema = new Schema<IOpeningBalance>(
+  {
+    accountType: { type: String, enum: ['PHYSICAL_CASH', 'EVC', 'MOBILE_MONEY'], required: true },
+    provider: { type: String, required: true },
+    currency: { type: String, enum: ['UGX', 'USD'], required: true },
+    amount: { type: Number, required: true, min: 0 },
+  },
+  { _id: false }
+);
+
 const CashSessionSchema = new Schema<ICashSession>(
   {
     cashierId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -51,6 +70,7 @@ const CashSessionSchema = new Schema<ICashSession>(
       min: 0,
       validate: { validator: Number.isInteger, message: 'Opening cash must be a whole UGX amount' },
     },
+    openingBalances: { type: [OpeningBalanceSchema], default: [] },
     cashAdded: [CashAdjustmentSchema],
     cashWithdrawn: [CashAdjustmentSchema],
     closingCashSystem: {

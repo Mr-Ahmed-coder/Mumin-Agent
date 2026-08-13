@@ -17,6 +17,8 @@ import reportRoutes from './routes/report.routes';
 import auditRoutes from './routes/audit.routes';
 import expenseRoutes from './routes/expense.routes';
 import exchangeRateRoutes from './routes/exchangeRate.routes';
+import internetCreditRoutes from './routes/internetCredit.routes';
+import customerDepositRoutes from './routes/customerDeposit.routes';
 
 const app: Application = express();
 
@@ -69,6 +71,8 @@ app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use(`${API_PREFIX}/audit-logs`, auditRoutes);
 app.use(`${API_PREFIX}/expenses`, expenseRoutes);
 app.use(`${API_PREFIX}/exchange-rates`, exchangeRateRoutes);
+app.use(`${API_PREFIX}/internet-credits`, internetCreditRoutes);
+app.use(`${API_PREFIX}/customer-deposits`, customerDepositRoutes);
 
 // Development tools are intentionally absent from the production API surface.
 if (env.NODE_ENV === 'development') {

@@ -7,6 +7,8 @@ import { Expense } from '../models/Expense';
 import { FeeRule } from '../models/FeeRule';
 import { Transaction } from '../models/Transaction';
 import { User } from '../models/User';
+import { InternetCredit } from '../models/InternetCredit';
+import { CustomerDeposit } from '../models/CustomerDeposit';
 import { env } from '../config/env';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
@@ -24,6 +26,8 @@ export const resetDevelopmentData = asyncHandler(async (_req: Request, res: Resp
   const auditLogs = await AuditLog.deleteMany({});
   const feeRules = await FeeRule.deleteMany({});
   const exchangeRates = await ExchangeRate.deleteMany({});
+  const internetCredits = await InternetCredit.deleteMany({});
+  const customerDeposits = await CustomerDeposit.deleteMany({});
   const refreshTokens = await User.updateMany({}, { $unset: { refreshTokenHash: 1 } });
 
   return ApiResponse.success(res, 'Development database reset complete', {
@@ -35,6 +39,8 @@ export const resetDevelopmentData = asyncHandler(async (_req: Request, res: Resp
       auditLogs: auditLogs.deletedCount,
       feeRules: feeRules.deletedCount,
       exchangeRates: exchangeRates.deletedCount,
+      internetCredits: internetCredits.deletedCount,
+      customerDeposits: customerDeposits.deletedCount,
     },
     refreshTokensCleared: refreshTokens.modifiedCount,
     usersPreserved: await User.countDocuments(),
