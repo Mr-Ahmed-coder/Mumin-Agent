@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import { connectDB } from '../config/db';
@@ -6,31 +7,56 @@ import { UserRole } from '../constants/roles';
 import { User } from '../models/User';
 
 const bootstrapSchema = z.object({
-  INITIAL_ADMIN_NAME: z.string().min(2),
-  INITIAL_ADMIN_EMAIL: z.string().email(),
-  INITIAL_ADMIN_PHONE: z.string().min(6),
-  INITIAL_ADMIN_PASSWORD: z.string().min(12),
+  ADMIN_NAME: z.string().min(2),
+  ADMIN_EMAIL: z.string().email(),
+  ADMIN_PHONE: z.string().min(6),
+  ADMIN_PASSWORD: z.string().min(6),
 });
 
 const bootstrapAdmin = async () => {
-  const config = bootstrapSchema.parse(process.env);
-  await connectDB();
+  const parsedConfig = bootstrapSchema.safeParse(process.env);
+  if (!parsedConfig.success) {
+    const invalidVariables = parsedConfig.error.issues
+      .map((issue) => issue.path.join('.'))
+      .filter(Boolean)
+      .join(', ');
 
-  const existingAdmin = await User.findOne({ role: UserRole.ADMIN });
-  if (existingAdmin) {
-    throw new Error('Bootstrap refused: an administrator already exists');
+    throw new Error(
+      `Missing or invalid required Admin bootstrap variables: ${invalidVariables}`
+    );
   }
 
-  const existingEmail = await User.findOne({ email: config.INITIAL_ADMIN_EMAIL.toLowerCase() });
-  if (existingEmail) {
-    throw new Error('Bootstrap refused: the configured email already exists');
+  const config = parsedConfig.data;
+  await connectDB();
+
+  const email = config.ADMIN_EMAIL.toLowerCase();
+  const existingAdmin = await User.findOne({ email }).select('+password');
+  if (existingAdmin) {
+    const passwordMatches = await existingAdmin.comparePassword(config.ADMIN_PASSWORD);
+
+    existingAdmin.name = config.ADMIN_NAME;
+    existingAdmin.phone = config.ADMIN_PHONE;
+    existingAdmin.role = UserRole.ADMIN;
+    existingAdmin.status = 'ACTIVE';
+
+    if (!passwordMatches) {
+      existingAdmin.password = config.ADMIN_PASSWORD;
+    }
+
+    await existingAdmin.save();
+    logger.info(
+      { userId: existingAdmin._id, email: existingAdmin.email, passwordUpdated: !passwordMatches },
+      'Development administrator verified'
+    );
+    return;
   }
 
   const admin = await User.create({
-    name: config.INITIAL_ADMIN_NAME,
-    email: config.INITIAL_ADMIN_EMAIL,
-    phone: config.INITIAL_ADMIN_PHONE,
-    password: config.INITIAL_ADMIN_PASSWORD,
+    name: config.ADMIN_NAME,
+    email,
+    phone: config.ADMIN_PHONE,
+    // The User model's pre-save hook hashes this value with bcryptjs.
+    password: config.ADMIN_PASSWORD,
     role: UserRole.ADMIN,
     status: 'ACTIVE',
   });
