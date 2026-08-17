@@ -1,11 +1,26 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import { createHash, randomUUID, timingSafeEqual } from 'crypto';
 import { User, IUser } from '../models/User';
 import { env } from '../config/env';
 import { ApiError } from '../utils/ApiError';
 import { AuthenticatedUser } from '../middlewares/auth';
 
 export class AuthService {
+  private static hashRefreshToken(refreshToken: string): string {
+    return createHash('sha256').update(refreshToken).digest('hex');
+  }
+
+  private static refreshTokenMatches(refreshToken: string, storedHash: string): boolean {
+    const candidateHash = this.hashRefreshToken(refreshToken);
+    const candidateBuffer = Buffer.from(candidateHash, 'hex');
+    const storedBuffer = Buffer.from(storedHash, 'hex');
+
+    return (
+      candidateBuffer.length === storedBuffer.length &&
+      timingSafeEqual(candidateBuffer, storedBuffer)
+    );
+  }
+
   static generateTokens(user: IUser) {
     const payload: AuthenticatedUser = {
       id: (user._id as any).toString(),
@@ -21,6 +36,7 @@ export class AuthService {
 
     const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
       expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
+      jwtid: randomUUID(),
     });
 
     return { accessToken, refreshToken };
@@ -43,9 +59,7 @@ export class AuthService {
 
     const { accessToken, refreshToken } = this.generateTokens(user);
 
-    // Save refresh token hash
-    const salt = await bcrypt.genSalt(10);
-    user.refreshTokenHash = await bcrypt.hash(refreshToken, salt);
+    user.refreshTokenHash = this.hashRefreshToken(refreshToken);
     user.lastLoginAt = new Date();
     await user.save();
 
@@ -65,14 +79,13 @@ export class AuthService {
         throw ApiError.unauthorized('Invalid refresh token');
       }
 
-      const isMatch = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+      const isMatch = this.refreshTokenMatches(refreshToken, user.refreshTokenHash);
       if (!isMatch) {
         throw ApiError.unauthorized('Invalid refresh token');
       }
 
       const tokens = this.generateTokens(user);
-      const salt = await bcrypt.genSalt(10);
-      user.refreshTokenHash = await bcrypt.hash(tokens.refreshToken, salt);
+      user.refreshTokenHash = this.hashRefreshToken(tokens.refreshToken);
       await user.save();
 
       return tokens;
@@ -82,6 +95,6 @@ export class AuthService {
   }
 
   static async logout(userId: string) {
-    await User.findByIdAndUpdate(userId, { refreshTokenHash: undefined });
+    await User.findByIdAndUpdate(userId, { $unset: { refreshTokenHash: 1 } });
   }
 }
