@@ -102,18 +102,19 @@ export interface FeeRule {
 }
 
 export interface CashSession {
+  ledgerVersion?: number;
+  openingVersion?: number;
+  accountOpenings?: { id: string; name: string; kind: 'CASH' | 'WALLET'; currency: 'USD' | 'UGX'; amount: number }[];
+  openingExchangeRate?: { rateId: string; rate: number; baseCurrency: 'USD'; targetCurrency: 'UGX'; recordedAt: string };
   _id: string;
   sessionNumber: string;
   currency: 'UGX';
   cashierId: User | string;
   status: 'OPEN' | 'CLOSED';
   openingCash: number;
-  openingBalances?: Array<{
-    accountType: 'PHYSICAL_CASH' | 'EVC' | 'MOBILE_MONEY';
-    provider: 'CASH_DRAWER' | WalletProvider;
-    currency: 'UGX' | 'USD';
-    amount: number;
-  }>;
+  openingBalances?: OpeningBalance[];
+  reconciliationPreview?: AccountReconciliationPreview[];
+  closingHistory?: ClosingRecord[];
   closingCashSystem: number;
   closingCashActual?: number;
   discrepancy?: number;
@@ -125,7 +126,53 @@ export interface CashSession {
   notes?: string;
 }
 
+export interface OpeningBalance {
+  _id?: string;
+  accountType: 'PHYSICAL_CASH' | 'EVC' | 'MOBILE_MONEY';
+  provider: 'CASH_DRAWER' | WalletProvider;
+  currency: 'UGX' | 'USD';
+  amount: number;
+  openedAt: string;
+  cashSessionId: string;
+  cashierId: User | string;
+  createdBy: User | string;
+}
+
+export interface ConfirmedMovement {
+  movementType: 'CASH_ADDED' | 'CASH_WITHDRAWN' | 'CASH_PAID_OUT' | 'WALLET_RECEIVED';
+  direction: 'IN' | 'OUT';
+  amount: number;
+  currency: 'UGX' | 'USD';
+  transactionCount: number;
+}
+
+export interface AccountReconciliationPreview {
+  accountId?: string;
+  openingBalanceId?: string;
+  accountType: OpeningBalance['accountType'];
+  provider: OpeningBalance['provider'];
+  currency: OpeningBalance['currency'];
+  openingBalance: number;
+  confirmedMovements: ConfirmedMovement[];
+  expectedClosingBalance: number;
+}
+
+export interface AccountReconciliation extends AccountReconciliationPreview {
+  actualClosingBalance: number;
+  difference: number;
+  status: 'BALANCED' | 'SHORTAGE' | 'OVERAGE';
+}
+
+export interface ClosingRecord {
+  _id?: string;
+  closedAt: string;
+  closedBy: User | string;
+  accounts: AccountReconciliation[];
+  notes?: string;
+}
+
 export interface InternetCreditPayment {
+  kind?: 'PAYMENT' | 'REVERSAL';
   _id: string;
   amountUGX: number;
   paidAt: string;
@@ -176,6 +223,11 @@ export interface CustomerDeposit {
 
 export interface DashboardStats {
   todayTransactionsCount: number;
+  todayVolumeUSD: number;
+  todayServiceFeesUSD: number;
+  todayCashPaidOutUGX: number;
+  cashAvailableUGX: number;
+  activeSessions: CashSession[];
   todayVolume: number;
   todayProfit: number;
   todayCashPaidOut: number;

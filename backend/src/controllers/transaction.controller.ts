@@ -3,14 +3,17 @@ import { Transaction } from '../models/Transaction';
 import { Customer } from '../models/Customer';
 import { CashSession } from '../models/CashSession';
 import { ExchangeRate } from '../models/ExchangeRate';
-import { FeeService } from '../services/fee.service';
+import { calculateUSDToUGX } from '../services/movementMath.service';
 import { AuditLog } from '../models/AuditLog';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { UserRole } from '../constants/roles';
+import { assertOpenSessionModification } from '../services/reconciliation.service';
+import { useLedgerIntegration, postLegacyFinancialRequest, cancelLegacyFinancialRequest } from '../services/legacyLedgerAdapter.service';
 
 export const createTransaction = asyncHandler(async (req: Request, res: Response) => {
+  if (useLedgerIntegration()) return ApiResponse.created(res, 'Transaction and movements recorded atomically', await postLegacyFinancialRequest(req, 'WALLET_USD_TO_CASH_UGX'));
   const cashierId = req.user?.id;
   const { customerId, walletProvider, referenceNumber, notes } = req.body;
 
@@ -29,6 +32,7 @@ export const createTransaction = asyncHandler(async (req: Request, res: Response
   }
 
   // 2. Fetch Active Exchange Rate (USD -> UGX)
+  if (activeSession.openingVersion === 2 || activeSession.ledgerVersion === 1) throw ApiError.badRequest('Use the development account-operations API for this ledger shift');
   let activeRate = await ExchangeRate.findOne({ status: 'ACTIVE' }).sort({ createdAt: -1 });
 
   if (!activeRate || activeRate.rate <= 0) {
@@ -48,15 +52,16 @@ export const createTransaction = asyncHandler(async (req: Request, res: Response
   }
 
   // 4. Calculate USD service fee
-  const serviceFeeUSD = await FeeService.calculateFee(amountReceivedUSD, walletProvider);
+  let calculation;
+  try { calculation = calculateUSDToUGX(amountReceivedUSD, exchangeRateUGX); }
+  catch (error) { throw ApiError.badRequest(error instanceof Error ? error.message : 'Invalid exchange amount or rate'); }
+  const { serviceFeeUSD, serviceFeeUGX, exchangeableAmountUSD, cashPaidUGX } = calculation;
 
   if (serviceFeeUSD >= amountReceivedUSD) {
     throw ApiError.badRequest('Calculated service fee exceeds or equals the received USD amount');
   }
 
   // 5. Dual Currency Conversion Math
-  const exchangeableAmountUSD = amountReceivedUSD - serviceFeeUSD;
-  const cashPaidUGX = Math.round(exchangeableAmountUSD * exchangeRateUGX);
   const profitUSD = serviceFeeUSD;
 
   if (cashPaidUGX <= 0) {
@@ -88,6 +93,8 @@ export const createTransaction = asyncHandler(async (req: Request, res: Response
     // Dual Currency Engine Fields
     amountReceivedUSD,
     serviceFeeUSD,
+    serviceFeeUGX,
+    feeRatePercent: 1,
     exchangeableAmountUSD,
     exchangeRateUGX,
     cashPaidUGX,
@@ -157,8 +164,14 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
   const query: any = {};
   if (walletProvider) query.walletProvider = walletProvider;
   if (status) query.status = status;
-  if (cashierId) query.cashierId = cashierId;
   if (customerId) query.customerId = customerId;
+
+  // Cashiers are strictly scoped to their own transactions
+  if (req.user?.role === UserRole.CASHIER) {
+    query.cashierId = req.user.id;
+  } else if (cashierId) {
+    query.cashierId = cashierId;
+  }
 
   if (startDate || endDate) {
     query.createdAt = {};
@@ -207,10 +220,17 @@ export const getTransactionById = asyncHandler(async (req: Request, res: Respons
     throw ApiError.notFound('Transaction not found');
   }
 
+  // Cashiers can only view details of their own transactions
+  const txnCashierId = ((transaction.cashierId as any)?._id || transaction.cashierId).toString();
+  if (req.user?.role === UserRole.CASHIER && txnCashierId !== req.user.id) {
+    throw ApiError.forbidden('Cashiers may only review their own transactions');
+  }
+
   return ApiResponse.success(res, 'Transaction details retrieved', transaction);
 });
 
 export const cancelTransaction = asyncHandler(async (req: Request, res: Response) => {
+  if (useLedgerIntegration()) return ApiResponse.success(res, 'Compensating reversal recorded', await cancelLegacyFinancialRequest(req));
   const { id } = req.params;
   const { cancellationReason } = req.body;
   const user = req.user;
@@ -222,6 +242,22 @@ export const cancelTransaction = asyncHandler(async (req: Request, res: Response
 
   if (transaction.status === 'CANCELLED') {
     throw ApiError.badRequest('Transaction is already cancelled');
+  }
+  if (transaction.operationId) throw ApiError.badRequest('Ledger transactions must be corrected with a compensating entry');
+
+  if (user?.role === UserRole.CASHIER && transaction.cashSessionId) {
+    const owningSession = await CashSession.findById(transaction.cashSessionId).select('status cashierId');
+    if (owningSession) {
+      assertOpenSessionModification(
+        owningSession.status,
+        owningSession.cashierId.toString(),
+        user.id
+      );
+    }
+  }
+
+  if (user?.role === UserRole.CASHIER && transaction.cashierId.toString() !== user.id) {
+    throw ApiError.forbidden('Cashiers may only modify their own transactions');
   }
 
   // Cashiers can only cancel within 30 minutes, Manager/Admin anytime

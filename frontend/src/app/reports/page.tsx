@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
 import { useQuery } from '@tanstack/react-query';
-import { api, API_BASE_URL } from '@/lib/api';
+import { api } from '@/lib/api';
 import { Transaction, WALLET_LABELS, WalletProvider, User } from '@/types';
 import {
   FileText,
@@ -99,32 +99,30 @@ export default function ReportsPage() {
   const topCashiers: any[] = reportData?.topCashiers || [];
   const topCustomers: any[] = reportData?.topCustomers || [];
   const walletDistribution: any[] = reportData?.walletDistribution || [];
+  const accountMovements: { accountId: string; currency: 'USD' | 'UGX'; category: string; direction: 'IN' | 'OUT'; amount: number }[] | undefined = reportData?.accountMovements;
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleExportExcel = () => {
-    const params = new URLSearchParams();
-    if (dates.startDate) params.append('startDate', dates.startDate);
-    if (dates.endDate) params.append('endDate', dates.endDate);
-    if (selectedCashier) params.append('cashierId', selectedCashier);
-    if (selectedWallet) params.append('walletProvider', selectedWallet);
-    if (selectedStatus) params.append('status', selectedStatus);
-
-    window.open(`${API_BASE_URL}/reports/export/excel?${params.toString()}`, '_blank');
+  const [exportError, setExportError] = useState('');
+  const download = async (format: 'excel' | 'csv') => {
+    setExportError('');
+    try {
+      const { data } = await api.get(`/reports/export/${format}`, {
+        responseType: 'blob', params: { startDate: dates.startDate || undefined, endDate: dates.endDate || undefined,
+          cashierId: selectedCashier || undefined, walletProvider: selectedWallet || undefined, status: selectedStatus || 'COMPLETED' },
+      });
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `mumin-agent-transactions.${format === 'excel' ? 'xlsx' : 'csv'}`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch { setExportError('Could not download the report. Please try again.'); }
   };
-
-  const handleExportCSV = () => {
-    const params = new URLSearchParams();
-    if (dates.startDate) params.append('startDate', dates.startDate);
-    if (dates.endDate) params.append('endDate', dates.endDate);
-    if (selectedCashier) params.append('cashierId', selectedCashier);
-    if (selectedWallet) params.append('walletProvider', selectedWallet);
-    if (selectedStatus) params.append('status', selectedStatus);
-
-    window.open(`${API_BASE_URL}/reports/export/csv?${params.toString()}`, '_blank');
-  };
+  const handleExportExcel = () => void download('excel');
+  const handleExportCSV = () => void download('csv');
 
   return (
     <div className="flex min-h-screen bg-slate-950">
@@ -138,6 +136,7 @@ export default function ReportsPage() {
         </div>
 
         <main className="p-8 space-y-8 flex-1 print:p-0">
+          {exportError && <p role="alert" className="text-sm text-red-700">{exportError}</p>}
           {/* Header & Export Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6 print:hidden">
             <div>
@@ -146,7 +145,7 @@ export default function ReportsPage() {
                 Reports & Financial Analytics
               </h1>
               <p className="text-sm text-slate-400">
-                Multi-dimensional business reporting, cashier audits, fee yields & spreadsheet exports
+                Review daily transactions, USD service fees, and UGX payouts.
               </p>
             </div>
 
@@ -383,6 +382,17 @@ export default function ReportsPage() {
               </div>
             </div>
 
+            {accountMovements && <section className="rounded-2xl border bg-white p-5 text-slate-900">
+              <h2 className="font-bold">Recorded account movements</h2>
+              <p className="text-sm text-slate-600">Ledger activity only, not revenue. Historical activity without verified ledger entries is excluded.</p>
+              <ul className="mt-3 space-y-2">{accountMovements.map(row => (
+                <li key={`${row.accountId}:${row.currency}:${row.category}:${row.direction}`} className="flex flex-wrap justify-between gap-2 border-b py-2 text-sm">
+                  <span>{WALLET_LABELS[row.accountId as WalletProvider] || row.accountId} · {row.category.replaceAll('_', ' ')}</span>
+                  <strong>{row.direction === 'IN' ? '+' : '−'} {row.currency} {row.amount.toLocaleString()}</strong>
+                </li>
+              ))}</ul>
+              {accountMovements.length === 0 && <p className="mt-3 text-sm">No ledger movements for this period.</p>}
+            </section>}
             {/* Wallet Provider Distribution */}
             <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4 print:bg-white print:border-gray-300">
               <h3 className="text-base font-bold text-white print:text-black flex items-center gap-2">

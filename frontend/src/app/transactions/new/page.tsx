@@ -23,6 +23,7 @@ import {
   Coins,
 } from 'lucide-react';
 import Link from 'next/link';
+import LedgerExchangeForm from '@/components/cash-sessions/LedgerExchangeForm';
 
 export default function NewTransactionPage() {
   const queryClient = useQueryClient();
@@ -50,13 +51,14 @@ export default function NewTransactionPage() {
 
   // Dual Currency Calculated State
   const [serviceFeeUSD, setServiceFeeUSD] = useState<number>(0);
+  const [serviceFeeUGX, setServiceFeeUGX] = useState<number>(0);
   const [exchangeableAmountUSD, setExchangeableAmountUSD] = useState<number>(0);
   const [exchangeRateUGX, setExchangeRateUGX] = useState<number>(3700);
   const [cashPaidUGX, setCashPaidUGX] = useState<number>(0);
 
   // Active Cash Session check
   const { data: activeSessionData } = useQuery({
-    queryKey: ['activeCashSession'],
+    queryKey: ['activeCashSession', user?._id, 'new-transaction'],
     queryFn: async () => {
       const res = await api.get('/cash-sessions/current');
       return res.data.data;
@@ -118,6 +120,7 @@ export default function NewTransactionPage() {
         });
         const data = res.data.data;
         setServiceFeeUSD(data.serviceFeeUSD);
+        setServiceFeeUGX(data.serviceFeeUGX);
         setExchangeableAmountUSD(data.exchangeableAmountUSD);
         setExchangeRateUGX(data.exchangeRateUGX);
         setCashPaidUGX(data.cashPaidUGX);
@@ -220,6 +223,12 @@ export default function NewTransactionPage() {
     'PREMIER_WALLET',
     'MYCASH',
   ];
+
+  if (activeSessionData?.ledgerVersion === 1) return (
+    <div className="flex min-h-screen"><Sidebar /><div className="min-w-0 flex-1"><Navbar />
+      <main className="p-4 md:p-8"><LedgerExchangeForm key={activeSessionData._id} shift={activeSessionData} /></main>
+    </div></div>
+  );
 
   return (
     <div className="flex min-h-screen bg-slate-950">
@@ -431,9 +440,9 @@ export default function NewTransactionPage() {
                 <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase">Service Fee (USD)</span>
                   <div className="text-xl font-bold text-teal-400 font-mono">
-                    ${serviceFeeUSD.toFixed(2)} USD
+                    USD {serviceFeeUSD.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                   </div>
-                  <p className="text-[10px] text-slate-500">Calculated automatically by fee engine</p>
+                  <p className="text-[10px] text-slate-500">1% · UGX {serviceFeeUGX.toLocaleString()} deducted from payout</p>
                 </div>
 
                 {/* Display 2: Exchangeable Amount USD */}
@@ -551,7 +560,7 @@ export default function NewTransactionPage() {
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-800/60">
                     <span className="text-slate-400">Service Fee (USD):</span>
-                    <strong className="text-teal-400 font-mono">${serviceFeeUSD.toFixed(2)} USD</strong>
+                    <strong className="text-teal-400 font-mono">USD {serviceFeeUSD.toLocaleString(undefined, { maximumFractionDigits: 4 })} · UGX {serviceFeeUGX.toLocaleString()}</strong>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-800/60">
                     <span className="text-slate-400">Exchangeable (USD):</span>

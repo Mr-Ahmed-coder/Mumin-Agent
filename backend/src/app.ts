@@ -78,6 +78,7 @@ app.use(`${API_PREFIX}/customer-deposits`, customerDepositRoutes);
 if (env.NODE_ENV === 'development') {
   const developmentRoutes = require('./routes/development.routes').default;
   app.use(`${API_PREFIX}/development`, developmentRoutes);
+  app.use(`${API_PREFIX}/account-operations`, require('./routes/accountOperations.routes').default);
 }
 
 // Health check endpoint

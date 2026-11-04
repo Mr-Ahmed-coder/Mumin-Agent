@@ -4,14 +4,15 @@ import {
   getDashboardCharts,
   getRecentTransactions,
 } from '../controllers/dashboard.controller';
-import { authenticate } from '../middlewares/auth';
+import { authenticate, authorize } from '../middlewares/auth';
+import { UserRole } from '../constants/roles';
 
 const router = Router();
 
 router.use(authenticate);
 
 router.get('/stats', getDashboardStats);
-router.get('/charts', getDashboardCharts);
+router.get('/charts', authorize(UserRole.ADMIN, UserRole.MANAGER), getDashboardCharts);
 router.get('/recent', getRecentTransactions);
 
 export default router;

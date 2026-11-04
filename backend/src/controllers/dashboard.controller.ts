@@ -4,6 +4,11 @@ import { Customer } from '../models/Customer';
 import { CashSession } from '../models/CashSession';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
+import { UserRole } from '../constants/roles';
+import { readLedgerBalances } from '../services/ledgerRead.service';
+
+export const buildDashboardCashierScope = (role: UserRole | undefined, userId: string | undefined) =>
+  role === UserRole.CASHIER ? { cashierId: userId } : {};
 
 export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
   const startOfDay = new Date();
@@ -12,16 +17,24 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
   const endOfDay = new Date();
   endOfDay.setHours(23, 59, 59, 999);
 
-  // Today's Transactions & Today's Profit
+  // Today's Transactions & Today's Volume/Fees
+  const cashierTransactionScope = buildDashboardCashierScope(req.user?.role, req.user?.id);
   const todayTransactions = await Transaction.find({
     createdAt: { $gte: startOfDay, $lte: endOfDay },
     status: 'COMPLETED',
+    ...cashierTransactionScope,
   });
 
   const todayCount = todayTransactions.length;
-  const todayVolume = todayTransactions.reduce((acc, t) => acc + t.amountReceived, 0);
-  const todayProfit = todayTransactions.reduce((acc, t) => acc + t.profit, 0);
-  const todayCashPaid = todayTransactions.reduce(
+  const todayVolumeUSD = todayTransactions.reduce(
+    (acc, t) => acc + (t.amountReceivedUSD ?? t.amountReceived ?? 0),
+    0
+  );
+  const todayServiceFeesUSD = todayTransactions.reduce(
+    (acc, t) => acc + (t.serviceFeeUSD ?? t.serviceFee ?? t.profitUSD ?? t.profit ?? 0),
+    0
+  );
+  const todayCashPaidUGX = todayTransactions.reduce(
     (acc, t) => acc + (t.cashPaidUGX ?? t.cashPaid ?? 0),
     0
   );
@@ -31,48 +44,60 @@ export const getDashboardStats = asyncHandler(async (req: Request, res: Response
     createdAt: { $gte: startOfDay, $lte: endOfDay },
   });
 
-  // Active Open Cash Sessions Detail
-  const activeSessions = await CashSession.find({ status: 'OPEN' }).populate('cashierId', 'name email role');
+  // Active Open Cash Sessions Detail (Physical Cash UGX)
+  const activeSessionScope =
+    req.user?.role === UserRole.CASHIER
+      ? { status: 'OPEN' as const, cashierId: req.user.id }
+      : { status: 'OPEN' as const };
+  const activeSessions = await CashSession.find(activeSessionScope).populate('cashierId', 'name email role');
   const openCashiersCount = activeSessions.length;
-  const totalOpeningCash = activeSessions.reduce((acc, s) => acc + s.openingCash, 0);
-  const totalCashAdded = activeSessions.reduce(
+  const legacySessions = activeSessions.filter(s => s.ledgerVersion !== 1 && s.openingVersion !== 2);
+  const totalOpeningCashUGX = legacySessions.reduce((acc, s) => acc + s.openingCash, 0);
+  const totalCashAddedUGX = legacySessions.reduce(
     (total, session) => total + session.cashAdded.reduce((sum, adjustment) => sum + adjustment.amount, 0),
     0
   );
-  const totalCashWithdrawn = activeSessions.reduce(
+  const totalCashWithdrawnUGX = legacySessions.reduce(
     (total, session) => total + session.cashWithdrawn.reduce((sum, adjustment) => sum + adjustment.amount, 0),
     0
   );
 
-  const activeSessionIds = activeSessions.map((s) => s._id);
+  const activeSessionIds = legacySessions.map((s) => s._id);
   const sessionTxns = await Transaction.find({
     cashSessionId: { $in: activeSessionIds },
     status: 'COMPLETED',
   });
-  const sessionCashPaidOut = sessionTxns.reduce(
+  const sessionCashPaidOutUGX = sessionTxns.reduce(
     (acc, t) => acc + (t.cashPaidUGX ?? t.cashPaid ?? 0),
     0
   );
 
-  const cashAvailable = Math.max(
+  const ledgerDrawerBalances = await Promise.all(activeSessions.filter(s => !legacySessions.includes(s))
+    .map(async s => (await readLedgerBalances(s))?.find(account => account.id === 'CASH_UGX')?.balance));
+  const cashAvailableUGX = ledgerDrawerBalances.some(value => value === undefined) ? undefined : Math.max(
     0,
-    totalOpeningCash + totalCashAdded - totalCashWithdrawn - sessionCashPaidOut
-  );
+    totalOpeningCashUGX + totalCashAddedUGX - totalCashWithdrawnUGX - sessionCashPaidOutUGX
+  ) + ledgerDrawerBalances.reduce<number>((sum, value) => sum + (value ?? 0), 0);
 
   return ApiResponse.success(res, 'Dashboard stats retrieved', {
     todayTransactionsCount: todayCount,
-    todayVolume,
-    todayProfit,
-    todayCashPaidOut: todayCashPaid,
+    todayVolumeUSD,
+    todayServiceFeesUSD,
+    todayCashPaidOutUGX: todayCashPaidUGX,
     todayNewCustomers,
     openCashiersCount,
-    cashAvailable,
+    cashAvailableUGX,
     activeSessions,
+    // Legacy aliases for backwards compatibility
+    todayVolume: todayVolumeUSD,
+    todayProfit: todayServiceFeesUSD,
+    todayCashPaidOut: todayCashPaidUGX,
+    cashAvailable: cashAvailableUGX,
   });
 });
 
 export const getDashboardCharts = asyncHandler(async (req: Request, res: Response) => {
-  // Aggregate last 7 days daily profit & transaction volume
+  // Aggregate last 7 days daily service fees (USD) & transaction volume (USD)
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
@@ -87,8 +112,8 @@ export const getDashboardCharts = asyncHandler(async (req: Request, res: Respons
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-        volume: { $sum: '$amountReceived' },
-        profit: { $sum: '$profit' },
+        volumeUSD: { $sum: { $ifNull: ['$amountReceivedUSD', '$amountReceived'] } },
+        serviceFeesUSD: { $sum: { $ifNull: ['$serviceFeeUSD', '$serviceFee'] } },
         count: { $sum: 1 },
       },
     },
@@ -101,8 +126,8 @@ export const getDashboardCharts = asyncHandler(async (req: Request, res: Respons
     {
       $group: {
         _id: '$walletProvider',
-        volume: { $sum: '$amountReceived' },
-        profit: { $sum: '$profit' },
+        volumeUSD: { $sum: { $ifNull: ['$amountReceivedUSD', '$amountReceived'] } },
+        serviceFeesUSD: { $sum: { $ifNull: ['$serviceFeeUSD', '$serviceFee'] } },
         count: { $sum: 1 },
       },
     },
@@ -121,7 +146,8 @@ export const getDashboardCharts = asyncHandler(async (req: Request, res: Respons
 });
 
 export const getRecentTransactions = asyncHandler(async (req: Request, res: Response) => {
-  const recent = await Transaction.find()
+  const query = buildDashboardCashierScope(req.user?.role, req.user?.id);
+  const recent = await Transaction.find(query)
     .populate('customerId', 'name phone')
     .populate('cashierId', 'name')
     .sort({ createdAt: -1 })

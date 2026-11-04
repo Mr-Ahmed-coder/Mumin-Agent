@@ -168,7 +168,7 @@ export default function TransactionsListPage() {
                         </td>
                         <td className="py-3.5 px-4 text-slate-300">
                           <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-800 text-xs font-medium">
-                            {WALLET_LABELS[txn.walletProvider] || txn.walletProvider}
+                            {String(txn.walletProvider) === 'CASH_USD' ? 'USD Cash' : WALLET_LABELS[txn.walletProvider] || txn.walletProvider}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 font-mono text-slate-300 text-xs">{txn.referenceNumber}</td>
@@ -257,7 +257,7 @@ export default function TransactionsListPage() {
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Wallet:</span>
-                <span className="font-semibold text-slate-300">{WALLET_LABELS[selectedTxn.walletProvider]}</span>
+                <span className="font-semibold text-slate-300">{String(selectedTxn.walletProvider) === 'CASH_USD' ? 'USD Cash' : WALLET_LABELS[selectedTxn.walletProvider] || selectedTxn.walletProvider}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Reference No.:</span>

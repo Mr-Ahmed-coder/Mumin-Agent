@@ -2,6 +2,8 @@ import { Schema, model, Document, Types } from 'mongoose';
 import { WalletProvider } from '../constants/wallets';
 
 export interface ITransaction extends Document {
+  operationId?: Types.ObjectId;
+  flow?: string;
   transactionNumber: string;
   cashSessionId?: Types.ObjectId;
   customerId: Types.ObjectId;
@@ -11,6 +13,8 @@ export interface ITransaction extends Document {
   // Dual Currency Fields
   amountReceivedUSD: number;     // Customer sends USD balance
   serviceFeeUSD: number;         // System service fee in USD
+  serviceFeeUGX?: number;
+  feeRatePercent?: number;
   exchangeableAmountUSD: number; // USD amount available for conversion = amountReceivedUSD - serviceFeeUSD
   exchangeRateUGX: number;       // Applied USD -> UGX exchange rate at time of transaction
   cashPaidUGX: number;           // Physical UGX cash handed to customer = exchangeableAmountUSD * exchangeRateUGX
@@ -35,15 +39,19 @@ export interface ITransaction extends Document {
 
 const TransactionSchema = new Schema<ITransaction>(
   {
+    operationId: { type: Schema.Types.ObjectId, ref: 'FinancialOperation', immutable: true },
+    flow: { type: String, immutable: true },
     transactionNumber: { type: String, required: true, unique: true, index: true },
     cashSessionId: { type: Schema.Types.ObjectId, ref: 'CashSession', index: true },
-    customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true, index: true },
-    customerPhone: { type: String, required: true, index: true },
-    walletProvider: { type: String, enum: Object.values(WalletProvider), required: true, index: true },
+    customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: function (this: ITransaction) { return !this.operationId; }, index: true },
+    customerPhone: { type: String, required: function (this: ITransaction) { return !this.operationId; }, index: true },
+    walletProvider: { type: String, required: true, index: true, validate: function (value: string) { return Boolean(this.operationId) || Object.values(WalletProvider).includes(value as WalletProvider); } },
     
     // Dual Currency Core Fields
     amountReceivedUSD: { type: Number, required: true, min: 0.01 },
     serviceFeeUSD: { type: Number, required: true, min: 0 },
+    serviceFeeUGX: { type: Number, min: 0 },
+    feeRatePercent: { type: Number, min: 0 },
     exchangeableAmountUSD: { type: Number, required: true, min: 0 },
     exchangeRateUGX: { type: Number, required: true, min: 0.0001 },
     cashPaidUGX: { type: Number, required: true, min: 0 },
@@ -79,4 +87,5 @@ TransactionSchema.pre('save', function (next) {
   next();
 });
 
+TransactionSchema.index({ operationId: 1 }, { unique: true, sparse: true });
 export const Transaction = model<ITransaction>('Transaction', TransactionSchema);

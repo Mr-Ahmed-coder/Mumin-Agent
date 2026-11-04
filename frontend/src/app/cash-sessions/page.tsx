@@ -17,8 +17,14 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import OpeningBalancesGrid from '@/components/cash-sessions/OpeningBalancesGrid';
+import ExpandedOpeningForm from '@/components/cash-sessions/ExpandedOpeningForm';
+import { reconciliationAccountId } from '@/lib/reconciliation';
+import { useAuth } from '@/providers/AuthProvider';
+import ReconciliationAccounts from '@/components/cash-sessions/ReconciliationAccounts';
 
 export default function CashSessionsPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isOpenModalOpen, setIsOpenModalOpen] = useState(false);
   const [isAddCashOpen, setIsAddCashOpen] = useState(false);
@@ -31,12 +37,12 @@ export default function CashSessionsPage() {
   const [mobileMoneyOpeningBalance, setMobileMoneyOpeningBalance] = useState<number | ''>('');
   const [mobileMoneyProvider, setMobileMoneyProvider] = useState<WalletProvider>('TELESOM_ZAAD');
   const [reason, setReason] = useState('');
-  const [closingActual, setClosingActual] = useState<number | ''>('');
+  const [closingActuals, setClosingActuals] = useState<Record<string, number | ''>>({});
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
   const { data: currentData, refetch: refetchCurrent } = useQuery<{ data: CashSession | null }>({
-    queryKey: ['activeCashSession'],
+    queryKey: ['activeCashSession', user?._id],
     queryFn: async () => {
       const res = await api.get('/cash-sessions/current');
       return res.data;
@@ -45,6 +51,7 @@ export default function CashSessionsPage() {
 
   const { data: pastData } = useQuery<{ data: CashSession[] }>({
     queryKey: ['cashSessionsList'],
+    enabled: user?.role === 'ADMIN' || user?.role === 'MANAGER',
     queryFn: async () => {
       const res = await api.get('/cash-sessions');
       return res.data;
@@ -107,8 +114,15 @@ export default function CashSessionsPage() {
 
   const closeSessionMutation = useMutation({
     mutationFn: async () => {
+      const accounts = activeSession?.reconciliationPreview || [];
       const res = await api.post('/cash-sessions/close', {
-        closingCashActual: Number(closingActual),
+        actualBalances: accounts.map((account) => ({
+          accountId: reconciliationAccountId(account),
+          accountType: account.accountType,
+          provider: account.provider,
+          currency: account.currency,
+          amount: Number(closingActuals[reconciliationAccountId(account)]),
+        })),
         notes: notes || undefined,
       });
       return res.data;
@@ -128,7 +142,7 @@ export default function CashSessionsPage() {
     setEvcOpeningBalance('');
     setMobileMoneyOpeningBalance('');
     setMobileMoneyProvider('TELESOM_ZAAD');
-    setClosingActual('');
+    setClosingActuals({});
     setNotes('');
     setError('');
   };
@@ -181,8 +195,9 @@ export default function CashSessionsPage() {
                   <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider">
                     {activeSession.sessionNumber}
                   </span>
-                  <h2 className="text-xl font-bold text-white mt-1">Active Cash Shift</h2>
+                  <h2 className="text-xl font-bold text-white mt-1">Active Shift</h2>
                   <p className="text-xs text-slate-400">Opened at: {new Date(activeSession.openedAt).toLocaleString()}</p>
+                  {activeSession.ledgerVersion === 1 && <Link className="mt-2 inline-block text-sm font-medium text-blue-700 underline" href={`/cash-sessions/${activeSession._id}`}>View account movements</Link>}
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -208,28 +223,9 @@ export default function CashSessionsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-                <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800">
-                  <span className="text-xs font-semibold text-slate-400 uppercase">Opening Cash (UGX)</span>
-                  <p className="text-2xl font-extrabold text-white mt-2">
-                    UGX {activeSession.openingCash.toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800">
-                  <span className="text-xs font-semibold text-slate-400 uppercase">EVC Opening (USD)</span>
-                  <p className="text-2xl font-extrabold text-white mt-2">
-                    USD {(activeSession.openingBalances?.find((b) => b.accountType === 'EVC')?.amount || 0).toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800">
-                  <span className="text-xs font-semibold text-slate-400 uppercase">Mobile Money Opening (USD)</span>
-                  <p className="text-2xl font-extrabold text-white mt-2">
-                    USD {(activeSession.openingBalances?.find((b) => b.accountType === 'MOBILE_MONEY')?.amount || 0).toLocaleString()}
-                  </p>
-                  <p className="mt-1 text-[10px] text-slate-500">
-                    {WALLET_LABELS[activeSession.openingBalances?.find((b) => b.accountType === 'MOBILE_MONEY')?.provider as WalletProvider] || 'Provider'}
-                  </p>
-                </div>
+              <OpeningBalancesGrid session={activeSession} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-5 bg-slate-950/80 rounded-xl border border-slate-800">
                   <span className="text-xs font-semibold text-slate-400 uppercase">Exchanges Processed</span>
                   <p className="text-2xl font-extrabold text-blue-400 mt-2">
@@ -239,7 +235,7 @@ export default function CashSessionsPage() {
                 <div className="p-5 bg-slate-950/80 rounded-xl border border-emerald-500/30">
                   <span className="text-xs font-semibold text-emerald-400 uppercase">Available Cash (UGX)</span>
                   <p className="text-3xl font-extrabold text-emerald-400 mt-2">
-                    UGX {(activeSession.currentCashBalance ?? activeSession.openingCash).toLocaleString()}
+                    {typeof activeSession.currentCashBalance === 'number' ? `UGX ${activeSession.currentCashBalance.toLocaleString()}` : 'Unavailable'}
                   </p>
                 </div>
               </div>
@@ -339,14 +335,24 @@ export default function CashSessionsPage() {
       </div>
 
       {/* Open Shift Modal */}
-      {isOpenModalOpen && (
+      {isOpenModalOpen && process.env.NODE_ENV === 'development' && (
+        <ExpandedOpeningForm close={() => setIsOpenModalOpen(false)} onOpened={() => {
+          queryClient.invalidateQueries({ queryKey: ['activeCashSession'] });
+          queryClient.invalidateQueries({ queryKey: ['cashSessionsList'] });
+          setIsOpenModalOpen(false);
+        }} />
+      )}
+      {isOpenModalOpen && process.env.NODE_ENV !== 'development' && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-6">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 shadow-2xl space-y-6">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-emerald-400" />
-                Open Cash Shift
-              </h3>
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-emerald-400" />
+                  Open Shift
+                </h3>
+                <p className="mt-1 text-xs text-slate-400">Record each account&apos;s opening balance separately.</p>
+              </div>
               <button onClick={() => setIsOpenModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -355,9 +361,9 @@ export default function CashSessionsPage() {
             {error && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">{error}</div>}
 
             <div className="space-y-4">
-              <div>
+              <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-                  Opening Cash (UGX) *
+                  Physical Cash Opening Balance (UGX) *
                 </label>
                 <input
                   type="number"
@@ -369,10 +375,11 @@ export default function CashSessionsPage() {
                   required
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold text-lg focus:outline-none focus:border-emerald-500"
                 />
+                <p className="mt-1.5 text-[11px] text-slate-500">Provider: Cash Drawer · Whole UGX only</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+                <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
                     EVC Opening Balance (USD) *
                   </label>
@@ -383,12 +390,14 @@ export default function CashSessionsPage() {
                     value={evcOpeningBalance}
                     onChange={(e) => setEvcOpeningBalance(e.target.value ? Number(e.target.value) : '')}
                     placeholder="e.g. 1,500"
+                    required
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-emerald-500"
                   />
+                  <p className="mt-1.5 text-[11px] text-slate-500">Provider: Hormuud EVC Plus</p>
                 </div>
-                <div>
+                <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
                   <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-                    Mobile Money Opening (USD) *
+                    Mobile Money Opening Balance (USD) *
                   </label>
                   <input
                     type="number"
@@ -397,8 +406,10 @@ export default function CashSessionsPage() {
                     value={mobileMoneyOpeningBalance}
                     onChange={(e) => setMobileMoneyOpeningBalance(e.target.value ? Number(e.target.value) : '')}
                     placeholder="e.g. 800"
+                    required
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-emerald-500"
                   />
+                  <p className="mt-1.5 text-[11px] text-slate-500">Select its provider below.</p>
                 </div>
               </div>
 
@@ -415,7 +426,7 @@ export default function CashSessionsPage() {
                     .filter(([provider]) => provider !== 'HORMUUD_EVC_PLUS')
                     .map(([provider, label]) => <option key={provider} value={provider}>{label}</option>)}
                 </select>
-                <p className="mt-1.5 text-[11px] text-slate-500">Digital wallet balances follow the current USD wallet configuration.</p>
+                <p className="mt-1.5 text-[11px] text-slate-500">EVC and Mobile Money use the existing USD wallet transaction currency.</p>
               </div>
 
               <div>
@@ -441,7 +452,7 @@ export default function CashSessionsPage() {
                 onClick={() => openSessionMutation.mutate()}
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/20 disabled:opacity-50"
               >
-                {openSessionMutation.isPending ? 'Opening...' : 'Start Shift'}
+                {openSessionMutation.isPending ? 'Opening...' : 'Open Shift'}
               </button>
             </div>
           </div>
@@ -514,12 +525,15 @@ export default function CashSessionsPage() {
       {/* Close Shift Modal */}
       {isCloseModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-6">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-6xl max-h-[92vh] overflow-y-auto rounded-2xl p-6 shadow-2xl space-y-6">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-amber-400" />
-                Close Shift & Reconcile Cash
-              </h3>
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-amber-400" />
+                  Close Shift & Reconcile Accounts
+                </h3>
+                <p className="mt-1 text-xs text-slate-400">Count each account separately. Different currencies are never combined.</p>
+              </div>
               <button onClick={() => setIsCloseModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -527,29 +541,15 @@ export default function CashSessionsPage() {
 
             {error && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">{error}</div>}
 
-            <div className="space-y-4 text-sm">
-              <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                <span className="text-xs text-slate-400">Expected Closing Cash (UGX):</span>
-                <p className="text-2xl font-extrabold text-emerald-400">
-                  UGX {(activeSession?.currentCashBalance ?? 0).toLocaleString()}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-                  Actual Closing Cash (UGX) *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={closingActual}
-                  onChange={(e) => setClosingActual(e.target.value ? Number(e.target.value) : '')}
-                  placeholder="Enter cash amount in physical drawer..."
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold text-lg focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+            <div className="space-y-5 text-sm">
+              {(activeSession?.openingVersion === 2 || activeSession?.ledgerVersion === 1) && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">Closing is not enabled for this development shift. No accounts have been marked balanced.</p>}
+              <ReconciliationAccounts
+                accounts={activeSession?.reconciliationPreview || []}
+                actualValues={closingActuals}
+                onActualChange={(accountType, value) =>
+                  setClosingActuals((current) => ({ ...current, [accountType]: value }))
+                }
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
@@ -570,7 +570,13 @@ export default function CashSessionsPage() {
                 Cancel
               </button>
               <button
-                disabled={closingActual === '' || closeSessionMutation.isPending}
+                disabled={
+                  !activeSession?.reconciliationPreview?.length ||
+                  activeSession.reconciliationPreview.some(
+                    (account) => closingActuals[reconciliationAccountId(account)] === '' || closingActuals[reconciliationAccountId(account)] === undefined
+                  ) ||
+                  closeSessionMutation.isPending
+                }
                 onClick={() => closeSessionMutation.mutate()}
                 className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-600/20 disabled:opacity-50"
               >

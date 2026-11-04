@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import { Transaction } from '../models/Transaction';
-import { Customer } from '../models/Customer';
-import { User } from '../models/User';
-import { CashSession } from '../models/CashSession';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import ExcelJS from 'exceljs';
+import { env } from '../config/env';
+import { ledgerMovementTotals } from '../services/ledgerRead.service';
 
 export const getComprehensiveReport = asyncHandler(async (req: Request, res: Response) => {
   const { startDate, endDate, cashierId, walletProvider, customerId, status } = req.query;
@@ -37,63 +36,72 @@ export const getComprehensiveReport = asyncHandler(async (req: Request, res: Res
     .populate('cashierId', 'name email role')
     .sort({ createdAt: -1 });
 
-  const totalVolume = transactions.reduce((acc, t) => acc + t.amountReceived, 0);
-  const totalServiceFees = transactions.reduce((acc, t) => acc + t.serviceFee, 0);
-  const totalCashPaidOut = transactions.reduce((acc, t) => acc + t.cashPaid, 0);
-  const totalProfit = transactions.reduce((acc, t) => acc + t.profit, 0);
+  const completed = transactions.filter(transaction => transaction.status === 'COMPLETED');
+  const totalVolumeUSD = completed.reduce((acc, t) => acc + (t.amountReceivedUSD ?? t.amountReceived ?? 0), 0);
+  const totalServiceFeesUSD = completed.reduce((acc, t) => acc + (t.serviceFeeUSD ?? t.serviceFee ?? 0), 0);
+  const totalCashPaidOutUGX = completed.reduce((acc, t) => acc + (t.cashPaidUGX ?? t.cashPaid ?? 0), 0);
+  const totalProfitUSD = completed.reduce((acc, t) => acc + (t.profitUSD ?? t.profit ?? 0), 0);
 
   // Cashier Performance Aggregation
-  const cashierMap: { [key: string]: { name: string; volume: number; fee: number; count: number } } = {};
-  transactions.forEach((t) => {
+  const cashierMap: { [key: string]: { name: string; volumeUSD: number; feeUSD: number; count: number } } = {};
+  completed.forEach((t) => {
     const cName = (t.cashierId as any)?.name || 'Unknown Cashier';
     if (!cashierMap[cName]) {
-      cashierMap[cName] = { name: cName, volume: 0, fee: 0, count: 0 };
+      cashierMap[cName] = { name: cName, volumeUSD: 0, feeUSD: 0, count: 0 };
     }
-    cashierMap[cName].volume += t.amountReceived;
-    cashierMap[cName].fee += t.serviceFee;
+    cashierMap[cName].volumeUSD += t.amountReceivedUSD ?? t.amountReceived ?? 0;
+    cashierMap[cName].feeUSD += t.serviceFeeUSD ?? t.serviceFee ?? 0;
     cashierMap[cName].count += 1;
   });
-  const topCashiers = Object.values(cashierMap).sort((a, b) => b.volume - a.volume);
+  const topCashiers = Object.values(cashierMap).sort((a, b) => b.volumeUSD - a.volumeUSD);
 
   // Customer Aggregation
-  const customerMap: { [key: string]: { name: string; phone: string; volume: number; fee: number; count: number } } = {};
-  transactions.forEach((t) => {
+  const customerMap: { [key: string]: { name: string; phone: string; volumeUSD: number; feeUSD: number; count: number } } = {};
+  completed.forEach((t) => {
     const cust = t.customerId as any;
     const cName = cust?.name || 'Walk-in Customer';
     const cPhone = t.customerPhone || cust?.phone || 'N/A';
     if (!customerMap[cName]) {
-      customerMap[cName] = { name: cName, phone: cPhone, volume: 0, fee: 0, count: 0 };
+      customerMap[cName] = { name: cName, phone: cPhone, volumeUSD: 0, feeUSD: 0, count: 0 };
     }
-    customerMap[cName].volume += t.amountReceived;
-    customerMap[cName].fee += t.serviceFee;
+    customerMap[cName].volumeUSD += t.amountReceivedUSD ?? t.amountReceived ?? 0;
+    customerMap[cName].feeUSD += t.serviceFeeUSD ?? t.serviceFee ?? 0;
     customerMap[cName].count += 1;
   });
-  const topCustomers = Object.values(customerMap).sort((a, b) => b.volume - a.volume).slice(0, 10);
+  const topCustomers = Object.values(customerMap).sort((a, b) => b.volumeUSD - a.volumeUSD).slice(0, 10);
 
   // Wallet Distribution Aggregation
-  const walletMap: { [key: string]: { provider: string; volume: number; fee: number; count: number } } = {};
-  transactions.forEach((t) => {
+  const walletMap: { [key: string]: { provider: string; volumeUSD: number; feeUSD: number; count: number } } = {};
+  completed.forEach((t) => {
     const wp = t.walletProvider;
     if (!walletMap[wp]) {
-      walletMap[wp] = { provider: wp, volume: 0, fee: 0, count: 0 };
+      walletMap[wp] = { provider: wp, volumeUSD: 0, feeUSD: 0, count: 0 };
     }
-    walletMap[wp].volume += t.amountReceived;
-    walletMap[wp].fee += t.serviceFee;
+    walletMap[wp].volumeUSD += t.amountReceivedUSD ?? t.amountReceived ?? 0;
+    walletMap[wp].feeUSD += t.serviceFeeUSD ?? t.serviceFee ?? 0;
     walletMap[wp].count += 1;
   });
-  const walletDistribution = Object.values(walletMap).sort((a, b) => b.volume - a.volume);
+  const walletDistribution = Object.values(walletMap).sort((a, b) => b.volumeUSD - a.volumeUSD);
+  const accountMovements = env.NODE_ENV === 'development' && !walletProvider && !customerId && (!status || status === 'COMPLETED')
+    ? await ledgerMovementTotals(matchQuery.createdAt, matchQuery.cashierId) : undefined;
 
   return ApiResponse.success(res, 'Comprehensive report generated successfully', {
     summary: {
-      totalTransactionsCount: transactions.length,
-      totalVolume,
-      totalServiceFees,
-      totalCashPaidOut,
-      totalProfit,
+      totalTransactionsCount: completed.length,
+      totalVolumeUSD,
+      totalServiceFeesUSD,
+      totalCashPaidOutUGX,
+      totalProfitUSD,
+      // Backward compatibility aliases
+      totalVolume: totalVolumeUSD,
+      totalServiceFees: totalServiceFeesUSD,
+      totalCashPaidOut: totalCashPaidOutUGX,
+      totalProfit: totalProfitUSD,
     },
     topCashiers,
     topCustomers,
     walletDistribution,
+    accountMovements,
     transactions,
   });
 });
@@ -130,10 +138,11 @@ export const exportTransactionsExcel = asyncHandler(async (req: Request, res: Re
     { header: 'Customer Name', key: 'customerName', width: 22 },
     { header: 'Phone Number', key: 'customerPhone', width: 16 },
     { header: 'Wallet Channel', key: 'walletProvider', width: 18 },
-    { header: 'Amount Received ($)', key: 'amountReceived', width: 20 },
-    { header: 'Service Fee ($)', key: 'serviceFee', width: 15 },
-    { header: 'Cash Paid Out ($)', key: 'cashPaid', width: 18 },
-    { header: 'Net Profit ($)', key: 'profit', width: 14 },
+    { header: 'Amount Received (USD)', key: 'amountReceivedUSD', width: 22 },
+    { header: 'Service Fee (USD)', key: 'serviceFeeUSD', width: 18 },
+    { header: 'Exchange Rate (UGX/USD)', key: 'exchangeRateUGX', width: 24 },
+    { header: 'Cash Paid Out (UGX)', key: 'cashPaidUGX', width: 22 },
+    { header: 'Service Fee Profit (USD)', key: 'profitUSD', width: 22 },
     { header: 'Reference No.', key: 'referenceNumber', width: 20 },
     { header: 'Cashier', key: 'cashier', width: 18 },
     { header: 'Status', key: 'status', width: 14 },
@@ -146,10 +155,11 @@ export const exportTransactionsExcel = asyncHandler(async (req: Request, res: Re
       customerName: (t.customerId as any)?.name || 'Walk-in',
       customerPhone: t.customerPhone,
       walletProvider: t.walletProvider,
-      amountReceived: t.amountReceived,
-      serviceFee: t.serviceFee,
-      cashPaid: t.cashPaid,
-      profit: t.profit,
+      amountReceivedUSD: t.amountReceivedUSD ?? t.amountReceived ?? 0,
+      serviceFeeUSD: t.serviceFeeUSD ?? t.serviceFee ?? 0,
+      exchangeRateUGX: t.exchangeRateUGX,
+      cashPaidUGX: t.cashPaidUGX ?? t.cashPaid ?? 0,
+      profitUSD: t.profitUSD ?? t.profit ?? 0,
       referenceNumber: t.referenceNumber || 'N/A',
       cashier: (t.cashierId as any)?.name || 'System',
       status: t.status,
@@ -197,12 +207,21 @@ export const exportTransactionsCSV = asyncHandler(async (req: Request, res: Resp
     .populate('cashierId', 'name')
     .sort({ createdAt: -1 });
 
-  let csvContent = 'Txn Number,Date Time,Customer,Phone,Wallet,Amount Received,Service Fee,Cash Paid,Profit,Reference,Cashier,Status\n';
+  let csvContent = 'Txn Number,Date Time,Customer,Phone,Wallet,Amount Received (USD),Service Fee (USD),Exchange Rate (UGX/USD),Cash Paid Out (UGX),Service Fee Profit (USD),Reference,Cashier,Status\n';
+  const textCell = (value: unknown) => {
+    const text = String(value ?? '');
+    return `"${(/^[\s]*[=+@-]|^[\t\r\n]/.test(text) ? "'" + text : text).replace(/"/g, '""')}"`;
+  };
 
   transactions.forEach((t) => {
-    const custName = `"${((t.customerId as any)?.name || 'Walk-in').replace(/"/g, '""')}"`;
-    const cashierName = `"${((t.cashierId as any)?.name || 'System').replace(/"/g, '""')}"`;
-    csvContent += `${t.transactionNumber},"${new Date(t.createdAt).toLocaleString()}",${custName},${t.customerPhone},${t.walletProvider},${t.amountReceived},${t.serviceFee},${t.cashPaid},${t.profit},${t.referenceNumber || ''},${cashierName},${t.status}\n`;
+    const custName = textCell((t.customerId as any)?.name || 'Walk-in');
+    const cashierName = textCell((t.cashierId as any)?.name || 'System');
+    const recUSD = t.amountReceivedUSD ?? t.amountReceived ?? 0;
+    const feeUSD = t.serviceFeeUSD ?? t.serviceFee ?? 0;
+    const rateUGX = t.exchangeRateUGX ?? '';
+    const paidUGX = t.cashPaidUGX ?? t.cashPaid ?? 0;
+    const profUSD = t.profitUSD ?? t.profit ?? 0;
+    csvContent += `${textCell(t.transactionNumber)},${textCell(new Date(t.createdAt).toLocaleString())},${custName},${textCell(t.customerPhone)},${textCell(t.walletProvider)},${recUSD},${feeUSD},${rateUGX},${paidUGX},${profUSD},${textCell(t.referenceNumber)},${cashierName},${textCell(t.status)}\n`;
   });
 
   res.setHeader('Content-Type', 'text/csv');

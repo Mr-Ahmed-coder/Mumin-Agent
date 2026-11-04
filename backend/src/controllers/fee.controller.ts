@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { calculateUSDToUGX } from '../services/movementMath.service';
 import { FeeRule } from '../models/FeeRule';
 import { ExchangeRate } from '../models/ExchangeRate';
 import { FeeService } from '../services/fee.service';
@@ -60,18 +61,21 @@ export const calculateFeeHandler = asyncHandler(async (req: Request, res: Respon
   }
 
   const exchangeRateUGX = activeRate.rate;
-  const serviceFeeUSD = await FeeService.calculateFee(amountUSD, walletProvider);
+  let calculation;
+  try { calculation = calculateUSDToUGX(amountUSD, exchangeRateUGX); }
+  catch (error) { throw ApiError.badRequest(error instanceof Error ? error.message : 'Invalid exchange amount or rate'); }
+  const { serviceFeeUSD, serviceFeeUGX, exchangeableAmountUSD, cashPaidUGX } = calculation;
 
   if (serviceFeeUSD >= amountUSD) {
     throw ApiError.badRequest('Calculated service fee exceeds or equals the received USD amount');
   }
 
-  const exchangeableAmountUSD = amountUSD - serviceFeeUSD;
-  const cashPaidUGX = Math.round(exchangeableAmountUSD * exchangeRateUGX);
 
   return ApiResponse.success(res, 'Dual currency exchange calculated successfully', {
     amountReceivedUSD: amountUSD,
     serviceFeeUSD,
+    serviceFeeUGX,
+    feeRatePercent: 1,
     exchangeableAmountUSD,
     exchangeRateUGX,
     cashPaidUGX,

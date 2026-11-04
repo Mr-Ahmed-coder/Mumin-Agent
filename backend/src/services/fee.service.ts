@@ -1,4 +1,3 @@
-import { FeeRule, IFeeRule } from '../models/FeeRule';
 import { WalletProvider } from '../constants/wallets';
 import { ApiError } from '../utils/ApiError';
 
@@ -11,30 +10,9 @@ export class FeeService {
       throw ApiError.badRequest('Transaction amount must be greater than 0');
     }
 
-    // Find applicable active fee rule (matching specific wallet or 'ALL')
-    const rules = await FeeRule.find({
-      status: 'ACTIVE',
-      $or: [{ walletProvider: provider }, { walletProvider: 'ALL' }],
-      minAmount: { $lte: amount },
-    }).sort({ minAmount: -1 }); // Pick highest matching tier
-
-    const matchingRule = rules.find(
-      (rule) => rule.maxAmount === null || rule.maxAmount >= amount
-    );
-
-    if (!matchingRule) {
-      // Default fallback fee calculation if no dynamic rule configured
-      if (amount <= 100) return 1;
-      if (amount <= 500) return 2.5;
-      if (amount <= 1000) return 5;
-      return Math.round(amount * 0.01 * 100) / 100;
-    }
-
-    if (matchingRule.feeType === 'FIXED') {
-      return matchingRule.feeValue;
-    } else {
-      // PERCENTAGE
-      return Math.round((amount * matchingRule.feeValue) / 100 * 100) / 100;
-    }
+    if (!Number.isFinite(amount)) throw ApiError.badRequest('Amount must be finite');
+    // This API serves USD-to-UGX only. The confirmed 1% policy supersedes
+    // legacy tiers for new exchanges. Historical rules/snapshots are retained.
+    return amount / 100;
   }
 }

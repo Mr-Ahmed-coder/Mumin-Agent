@@ -80,9 +80,9 @@ export default function FeeRulesPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Dynamic Fee Rules Manager</h1>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Stored Fee Rules</h1>
               <p className="text-sm text-slate-400">
-                Configure tier-based service fees per wallet provider. Cashiers never calculate manually.
+                USD-to-UGX exchanges use the confirmed 1% fee. Stored tiers do not override this policy.
               </p>
             </div>
             <button

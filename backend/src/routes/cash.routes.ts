@@ -1,6 +1,9 @@
 import { Router } from 'express';
+import { env } from '../config/env';
 import {
   getCurrentCashSession,
+  getOpeningAccounts,
+  openExpandedCashSession,
   getCashSessionById,
   openCashSession,
   addCashToSession,
@@ -21,6 +24,10 @@ import {
 const router = Router();
 
 router.use(authenticate);
+if (env.NODE_ENV === 'development') {
+  router.get('/opening-accounts', authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER), getOpeningAccounts);
+  router.post('/open-accounts', authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER), openExpandedCashSession);
+}
 
 router.get('/current', getCurrentCashSession);
 router.get('/:id', getCashSessionById);

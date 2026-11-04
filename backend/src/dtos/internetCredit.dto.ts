@@ -19,3 +19,14 @@ export const recordInternetCreditPaymentSchema = z.object({
     notes: z.string().trim().max(500).optional(),
   }),
 });
+
+export const customerInternetCreditHistorySchema = z.object({
+  query: z
+    .object({
+      phone: z.string().trim().min(6, 'Phone number is too short').optional(),
+      customerName: z.string().trim().min(2, 'Customer name is required').optional(),
+    })
+    .refine((query) => Boolean(query.phone || query.customerName), {
+      message: 'Phone number or customer name is required',
+    }),
+});

@@ -21,6 +21,9 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import OpeningBalancesGrid from '@/components/cash-sessions/OpeningBalancesGrid';
+import ReconciliationAccounts from '@/components/cash-sessions/ReconciliationAccounts';
+import ShiftLedger from '@/components/cash-sessions/ShiftLedger';
 
 export default function SessionDetailsPage() {
   const params = useParams();
@@ -87,6 +90,7 @@ export default function SessionDetailsPage() {
   }
 
   const isManagerOrAdmin = user && (user.role === 'ADMIN' || user.role === 'MANAGER');
+  const closingRecords = session.closingHistory || [];
 
   return (
     <div className="flex min-h-screen bg-slate-950">
@@ -176,13 +180,19 @@ export default function SessionDetailsPage() {
             </div>
           </div>
 
-          {/* Financial Breakdown Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-1">
-              <span className="text-xs font-semibold text-slate-400 uppercase">Opening Cash (UGX)</span>
-              <p className="text-2xl font-extrabold text-white">UGX {session.openingCash.toLocaleString()}</p>
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-base font-bold text-white">Opening Balances</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Separate balances recorded when this shift was opened.
+              </p>
             </div>
+            <OpeningBalancesGrid session={session} />
+          </section>
 
+          {/* Financial Breakdown Cards */}
+          {session.ledgerVersion === 1 && <ShiftLedger shiftId={id} canCorrect={session.status === 'OPEN' && (user?.role === 'ADMIN' || user?.role === 'MANAGER')} />}
+          {!session.ledgerVersion && session.openingVersion !== 2 && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-1">
               <span className="text-xs font-semibold text-slate-400 uppercase">Total Cash Paid Out</span>
               <p className="text-2xl font-extrabold text-blue-400">UGX {totalCashPaidOut.toLocaleString()}</p>
@@ -199,10 +209,42 @@ export default function SessionDetailsPage() {
               <span className="text-xs font-semibold text-emerald-400 uppercase">Expected Closing Cash (UGX)</span>
               <p className="text-2xl font-extrabold text-emerald-400">UGX {expectedClosingCash.toLocaleString()}</p>
             </div>
-          </div>
+          </div>}
 
-          {/* Reconciled Actual vs Difference Box */}
-          {session.status === 'CLOSED' && (
+          {closingRecords.length > 0 && (
+            <section className="space-y-5">
+              <div>
+                <h3 className="text-base font-bold text-white">Closing & Reconciliation History</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Preserved closing snapshots. Reopening a shift does not overwrite earlier records.
+                </p>
+              </div>
+              {[...closingRecords].reverse().map((record, index) => (
+                <div key={record._id || record.closedAt} className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl space-y-5">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                        {index === 0 ? 'Latest Closing Record' : 'Previous Closing Record'}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-300">Closed {new Date(record.closedAt).toLocaleString()}</p>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Closed by: <span className="font-semibold text-white">{(record.closedBy as any)?.name || 'Authorized user'}</span>
+                    </p>
+                  </div>
+                  <ReconciliationAccounts accounts={record.accounts} />
+                  {record.notes && (
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-slate-300">
+                      <span className="font-semibold text-slate-500">Closing notes: </span>{record.notes}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* Legacy sessions closed before per-account reconciliation was introduced */}
+          {session.status === 'CLOSED' && closingRecords.length === 0 && (
             <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4">
               <h3 className="text-base font-bold text-white">Reconciliation Summary</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
