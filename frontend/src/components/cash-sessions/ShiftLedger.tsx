@@ -23,7 +23,7 @@ export default function ShiftLedger({ shiftId, canCorrect }: { shiftId: string; 
   const reversed = new Set(data.operations.map(operation => operation.reversesOperationId));
   return <section className="space-y-4 rounded-xl border bg-white p-5 text-slate-900">
     <h2 className="font-bold">Account balances and movements</h2>
-    <p className="text-sm text-slate-600">Recorded balances only. Closing reconciliation is not enabled for this shift.</p>
+    <p className="text-sm text-slate-600">Recorded balances before physical counts. See closing history for actual balances and differences.</p>
     <ul className="grid gap-2 sm:grid-cols-2">{data.accounts.map(account => <li key={account.id} className="rounded-lg bg-blue-50 p-3">
       {account.name}: <strong>{account.currency} {account.balance.toLocaleString()}</strong>
     </li>)}</ul>

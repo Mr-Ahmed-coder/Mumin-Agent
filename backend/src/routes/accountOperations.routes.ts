@@ -12,6 +12,7 @@ import { accountBalanceMinor, quoteMovement } from '../services/movementMath.ser
 import { ExchangeRate } from '../models/ExchangeRate';
 import { z } from 'zod';
 import { ledgerMigrationDryRun } from '../services/ledgerRead.service';
+import { ledgerClosingEligibility } from '../services/ledgerClosing.service';
 
 const router = Router();
 router.use((_req, _res, next) => env.NODE_ENV === 'development' ? next() : next(ApiError.notFound()));
@@ -50,13 +51,15 @@ router.get('/shift/:id', asyncHandler(async (req: Request, res: Response) => {
   if (shift.ledgerVersion !== 1) throw ApiError.badRequest('This shift predates movement capture; current balances are unverified');
   const operations = await FinancialOperation.find({ shiftId: shift._id }).sort({ occurredAt: 1, _id: 1 });
   const legs = operations.flatMap(operation => operation.legs as any);
-  return ApiResponse.success(res, 'Recorded account movements (expanded closing remains blocked)', {
+  const eligibility = await ledgerClosingEligibility(shift);
+  return ApiResponse.success(res, 'Recorded account movements', {
     operations,
     accounts: shift.accountOpenings?.map(account => ({ id: account.id, name: account.name, currency: account.currency, amount: account.amount,
       balance: accountBalanceMinor(account.amount, account, legs) / (account.currency === 'USD' ? 100 : 1) })),
     serviceFeesUSD: operations.reduce((sum, operation) => sum + Math.round(operation.feeUSD * 10000), 0) / 10000,
     serviceFeesUGX: operations.reduce((sum, operation) => sum + operation.feeUGX, 0),
-    closingReady: false,
+    closingReady: eligibility.ready,
+    closingBlockedReason: 'reason' in eligibility ? eligibility.reason : undefined,
   });
 }));
 export default router;

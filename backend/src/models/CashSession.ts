@@ -24,7 +24,8 @@ export interface ICashAdjustment {
 export type ReconciliationStatus = 'BALANCED' | 'SHORTAGE' | 'OVERAGE';
 
 export interface IConfirmedMovement {
-  movementType: 'CASH_ADDED' | 'CASH_WITHDRAWN' | 'CASH_PAID_OUT' | 'WALLET_RECEIVED';
+  movementType: 'CASH_ADDED' | 'CASH_WITHDRAWN' | 'CASH_PAID_OUT' | 'WALLET_RECEIVED' | 'EXCHANGE' |
+    'REVERSAL' | 'ADJUSTMENT' | 'EXPENSE' | 'CUSTOMER_DEPOSIT' | 'CUSTOMER_WITHDRAWAL' | 'CREDIT_REPAYMENT';
   direction: 'IN' | 'OUT';
   amount: number;
   currency: 'UGX' | 'USD';
@@ -34,8 +35,9 @@ export interface IConfirmedMovement {
 export interface IAccountReconciliation {
   accountId?: string;
   openingBalanceId?: Types.ObjectId;
-  accountType: IOpeningBalance['accountType'];
-  provider: IOpeningBalance['provider'];
+  accountType: IOpeningBalance['accountType'] | 'LEDGER_CASH' | 'LEDGER_WALLET';
+  provider: string;
+  accountName?: string;
   currency: IOpeningBalance['currency'];
   openingBalance: number;
   confirmedMovements: IConfirmedMovement[];
@@ -51,6 +53,7 @@ export interface IClosingRecord {
   closedBy: Types.ObjectId;
   accounts: IAccountReconciliation[];
   notes?: string;
+  movementRevision?: number;
 }
 
 export interface ICashSession extends Document {
@@ -129,7 +132,8 @@ const ConfirmedMovementSchema = new Schema<IConfirmedMovement>(
   {
     movementType: {
       type: String,
-      enum: ['CASH_ADDED', 'CASH_WITHDRAWN', 'CASH_PAID_OUT', 'WALLET_RECEIVED'],
+      enum: ['CASH_ADDED', 'CASH_WITHDRAWN', 'CASH_PAID_OUT', 'WALLET_RECEIVED', 'EXCHANGE', 'REVERSAL',
+        'ADJUSTMENT', 'EXPENSE', 'CUSTOMER_DEPOSIT', 'CUSTOMER_WITHDRAWAL', 'CREDIT_REPAYMENT'],
       required: true,
     },
     direction: { type: String, enum: ['IN', 'OUT'], required: true },
@@ -144,10 +148,10 @@ const AccountReconciliationSchema = new Schema<IAccountReconciliation>(
   {
     accountId: { type: String },
     openingBalanceId: { type: Schema.Types.ObjectId },
-    accountType: { type: String, enum: ['PHYSICAL_CASH', 'EVC', 'MOBILE_MONEY'], required: true },
+    accountType: { type: String, enum: ['PHYSICAL_CASH', 'EVC', 'MOBILE_MONEY', 'LEDGER_CASH', 'LEDGER_WALLET'], required: true },
+    accountName: { type: String },
     provider: {
       type: String,
-      enum: ['CASH_DRAWER', ...Object.values(WalletProvider)],
       required: true,
     },
     currency: { type: String, enum: ['UGX', 'USD'], required: true },
@@ -167,6 +171,7 @@ const ClosingRecordSchema = new Schema<IClosingRecord>(
     closedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     accounts: { type: [AccountReconciliationSchema], required: true },
     notes: { type: String, maxlength: 500 },
+    movementRevision: { type: Number, min: 0 },
   },
   { _id: true }
 );

@@ -2,13 +2,7 @@ import axios from 'axios';
 
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
-export const API_BASE_URL =
-  configuredApiUrl ||
-  (process.env.NODE_ENV === 'development' ? 'http://localhost:5000/api/v1' : '');
-
-if (!API_BASE_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL is required for production builds');
-}
+export const API_BASE_URL = configuredApiUrl || 'http://localhost:5000/api/v1';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

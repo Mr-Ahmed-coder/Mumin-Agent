@@ -7,7 +7,16 @@ frontend/.next/
 **/.env
 **/.env.local
 **/.env.*.local
+**/.env.*
 !**/.env.example
+*.tsbuildinfo
+
+# Local database exports and private key material
+**/backups/
+*.dump
+*.bson
+*.pem
+*.key
 
 # Logs and local tooling output
 *.log

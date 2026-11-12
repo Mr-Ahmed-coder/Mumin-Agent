@@ -59,6 +59,7 @@ export default function CashSessionsPage() {
   });
 
   const activeSession = currentData?.data;
+  const ledgerClosing = activeSession?.ledgerVersion === 1 || activeSession?.openingVersion === 2;
   const pastSessions = pastData?.data || [];
 
   const openSessionMutation = useMutation({
@@ -168,18 +169,29 @@ export default function CashSessionsPage() {
                   resetForm();
                   setIsOpenModalOpen(true);
                 }}
-                className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-emerald-600/20 transition-all self-start"
+                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-brand-600/20 transition-all self-start"
               >
                 <Wallet className="w-4 h-4" />
                 Open Cash Shift
               </button>
+            ) : ledgerClosing ? (
+              activeSession.closingEligibility?.ready ? (
+                <Link href={`/cash-sessions/${activeSession._id}/close`} className="inline-flex min-h-11 items-center gap-2 self-start rounded-xl bg-blue-700 px-4 py-2 font-semibold text-[#ffffff] focus-visible:ring-2 focus-visible:ring-blue-600">
+                  <Lock className="h-4 w-4" /> Close Shift
+                </Link>
+              ) : (
+                <div className="max-w-sm space-y-2">
+                  <button type="button" disabled className="rounded-lg bg-slate-200 px-4 py-2 font-semibold text-[#6B7A99]">Close Shift</button>
+                  <p role="status" className="text-sm text-[#6B7A99]">{activeSession.closingEligibility?.reason || 'Closing balances are unavailable.'}</p>
+                </div>
+              )
             ) : (
               <button
                 onClick={() => {
                   resetForm();
                   setIsCloseModalOpen(true);
                 }}
-                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-amber-600/20 transition-all self-start"
+                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-[#ffffff] font-bold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-brand-600/20 transition-all self-start"
               >
                 <Lock className="w-4 h-4" />
                 Close Shift & Reconcile
@@ -189,10 +201,10 @@ export default function CashSessionsPage() {
 
           {/* Active Shift Overview Box */}
           {activeSession ? (
-            <div className="p-8 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-emerald-500/30 shadow-2xl space-y-6">
+            <div className="p-8 rounded-2xl bg-white border border-line shadow-2xl space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
                 <div>
-                  <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider">
+                  <span className="text-xs font-mono text-brand-600 font-bold uppercase tracking-wider">
                     {activeSession.sessionNumber}
                   </span>
                   <h2 className="text-xl font-bold text-white mt-1">Active Shift</h2>
@@ -205,7 +217,7 @@ export default function CashSessionsPage() {
                       resetForm();
                       setIsAddCashOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold text-xs rounded-xl border border-slate-700 transition-colors"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-brand-50 border border-line text-brand-600 font-semibold text-xs rounded-xl border border-slate-700 transition-colors"
                   >
                     <PlusCircle className="w-4 h-4" />
                     Add Cash
@@ -215,7 +227,7 @@ export default function CashSessionsPage() {
                       resetForm();
                       setIsWithdrawOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold text-xs rounded-xl border border-slate-700 transition-colors"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-brand-50 border border-line text-ink font-semibold text-xs rounded-xl border border-slate-700 transition-colors"
                   >
                     <MinusCircle className="w-4 h-4" />
                     Withdraw Cash
@@ -232,9 +244,9 @@ export default function CashSessionsPage() {
                     {activeSession.totalTransactionsCount || 0} Txns (UGX {activeSession.totalCashPaidOut?.toLocaleString() || '0'} Paid)
                   </p>
                 </div>
-                <div className="p-5 bg-slate-950/80 rounded-xl border border-emerald-500/30">
-                  <span className="text-xs font-semibold text-emerald-400 uppercase">Available Cash (UGX)</span>
-                  <p className="text-3xl font-extrabold text-emerald-400 mt-2">
+                <div className="p-5 bg-slate-950/80 rounded-xl border border-line">
+                  <span className="text-xs font-semibold text-brand-600 uppercase">Available Cash (UGX)</span>
+                  <p className="text-3xl font-extrabold text-brand-600 mt-2">
                     {typeof activeSession.currentCashBalance === 'number' ? `UGX ${activeSession.currentCashBalance.toLocaleString()}` : 'Unavailable'}
                   </p>
                 </div>
@@ -255,7 +267,7 @@ export default function CashSessionsPage() {
           {/* Past Shift History Ledger */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden space-y-4 p-6">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <History className="w-5 h-5 text-emerald-400" />
+              <History className="w-5 h-5 text-brand-600" />
               Shift Reconciliations History
             </h3>
 
@@ -283,7 +295,7 @@ export default function CashSessionsPage() {
                   ) : (
                     pastSessions.map((s) => (
                       <tr key={s._id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-semibold text-emerald-400 text-xs">
+                        <td className="py-3.5 px-4 font-mono font-semibold text-brand-600 text-xs">
                           {s.sessionNumber}
                         </td>
                         <td className="py-3.5 px-4 text-slate-200">{(s.cashierId as any)?.name || 'Cashier'}</td>
@@ -291,14 +303,14 @@ export default function CashSessionsPage() {
                         <td className="py-3.5 px-4 font-mono text-slate-300">
                           UGX {s.closingCashSystem?.toLocaleString() || '0'}
                         </td>
-                        <td className="py-3.5 px-4 font-mono text-emerald-400 font-bold">
+                        <td className="py-3.5 px-4 font-mono text-brand-600 font-bold">
                           {s.closingCashActual === undefined ? '—' : `UGX ${s.closingCashActual.toLocaleString()}`}
                         </td>
                         <td className="py-3.5 px-4 font-mono">
                           {s.discrepancy === undefined ? (
                             '—'
                           ) : s.discrepancy === 0 ? (
-                            <span className="text-emerald-400">UGX 0 (Balanced)</span>
+                            <span className="text-brand-600">UGX 0 (Balanced)</span>
                           ) : s.discrepancy < 0 ? (
                             <span className="text-red-400 font-bold">UGX -{Math.abs(s.discrepancy).toLocaleString()} (Shortage)</span>
                           ) : (
@@ -319,7 +331,7 @@ export default function CashSessionsPage() {
                         <td className="py-3.5 px-4 text-center">
                           <Link
                             href={`/cash-sessions/${s._id}`}
-                            className="px-2.5 py-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg transition-colors inline-block"
+                            className="px-2.5 py-1 text-xs font-semibold text-ink bg-white hover:bg-brand-50 border border-line rounded-lg transition-colors inline-block"
                           >
                             View Audit
                           </Link>
@@ -348,7 +360,7 @@ export default function CashSessionsPage() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Wallet className="w-5 h-5 text-emerald-400" />
+                  <Wallet className="w-5 h-5 text-brand-600" />
                   Open Shift
                 </h3>
                 <p className="mt-1 text-xs text-slate-400">Record each account&apos;s opening balance separately.</p>
@@ -373,7 +385,7 @@ export default function CashSessionsPage() {
                   step="1"
                   placeholder="e.g. 8,500,000"
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold text-lg focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold text-lg focus:outline-none focus:border-brand-600"
                 />
                 <p className="mt-1.5 text-[11px] text-slate-500">Provider: Cash Drawer · Whole UGX only</p>
               </div>
@@ -391,7 +403,7 @@ export default function CashSessionsPage() {
                     onChange={(e) => setEvcOpeningBalance(e.target.value ? Number(e.target.value) : '')}
                     placeholder="e.g. 1,500"
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-brand-600"
                   />
                   <p className="mt-1.5 text-[11px] text-slate-500">Provider: Hormuud EVC Plus</p>
                 </div>
@@ -407,7 +419,7 @@ export default function CashSessionsPage() {
                     onChange={(e) => setMobileMoneyOpeningBalance(e.target.value ? Number(e.target.value) : '')}
                     placeholder="e.g. 800"
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-brand-600"
                   />
                   <p className="mt-1.5 text-[11px] text-slate-500">Select its provider below.</p>
                 </div>
@@ -420,7 +432,7 @@ export default function CashSessionsPage() {
                 <select
                   value={mobileMoneyProvider}
                   onChange={(e) => setMobileMoneyProvider(e.target.value as WalletProvider)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 text-sm focus:outline-none focus:border-brand-600"
                 >
                   {Object.entries(WALLET_LABELS)
                     .filter(([provider]) => provider !== 'HORMUUD_EVC_PLUS')
@@ -438,7 +450,7 @@ export default function CashSessionsPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Shift start notes..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-xs focus:outline-none focus:border-brand-600"
                 />
               </div>
             </div>
@@ -450,7 +462,7 @@ export default function CashSessionsPage() {
               <button
                 disabled={amount === '' || evcOpeningBalance === '' || mobileMoneyOpeningBalance === '' || openSessionMutation.isPending}
                 onClick={() => openSessionMutation.mutate()}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-[#ffffff] text-xs font-semibold shadow-lg shadow-brand-600/20 disabled:opacity-50"
               >
                 {openSessionMutation.isPending ? 'Opening...' : 'Open Shift'}
               </button>
@@ -487,7 +499,7 @@ export default function CashSessionsPage() {
                   step="1"
                   placeholder="e.g. 500,000"
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-100 font-bold focus:outline-none focus:border-brand-600"
                 />
               </div>
 
@@ -501,7 +513,7 @@ export default function CashSessionsPage() {
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="e.g. Bank cash replenishment"
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-xs focus:outline-none focus:border-brand-600"
                 />
               </div>
             </div>
@@ -513,7 +525,7 @@ export default function CashSessionsPage() {
               <button
                 disabled={!amount || !reason || addCashMutation.isPending || withdrawCashMutation.isPending}
                 onClick={() => (isAddCashOpen ? addCashMutation.mutate() : withdrawCashMutation.mutate())}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-[#ffffff] text-xs font-semibold shadow-lg shadow-brand-600/20 disabled:opacity-50"
               >
                 Confirm
               </button>
@@ -529,7 +541,7 @@ export default function CashSessionsPage() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-amber-400" />
+                  <Lock className="w-5 h-5 text-brand-600" />
                   Close Shift & Reconcile Accounts
                 </h3>
                 <p className="mt-1 text-xs text-slate-400">Count each account separately. Different currencies are never combined.</p>
@@ -542,7 +554,6 @@ export default function CashSessionsPage() {
             {error && <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">{error}</div>}
 
             <div className="space-y-5 text-sm">
-              {(activeSession?.openingVersion === 2 || activeSession?.ledgerVersion === 1) && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">Closing is not enabled for this development shift. No accounts have been marked balanced.</p>}
               <ReconciliationAccounts
                 accounts={activeSession?.reconciliationPreview || []}
                 actualValues={closingActuals}
@@ -560,7 +571,7 @@ export default function CashSessionsPage() {
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Reconciliation notes..."
                   rows={2}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-xs focus:outline-none focus:border-brand-600"
                 />
               </div>
             </div>
@@ -578,7 +589,7 @@ export default function CashSessionsPage() {
                   closeSessionMutation.isPending
                 }
                 onClick={() => closeSessionMutation.mutate()}
-                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-600/20 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-[#ffffff] font-bold text-xs shadow-lg shadow-brand-600/20 disabled:opacity-50"
               >
                 {closeSessionMutation.isPending ? 'Closing...' : 'Close & Submit Shift'}
               </button>

@@ -69,7 +69,7 @@ export default function ExchangeRatePage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-emerald-400" />
+                <TrendingUp className="w-6 h-6 text-brand-600" />
                 Exchange Rate Management (USD &rarr; UGX)
               </h1>
               <p className="text-sm text-slate-400">
@@ -93,7 +93,7 @@ export default function ExchangeRatePage() {
           )}
 
           {/* Active Exchange Rate Banner */}
-          <div className="p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/30 shadow-2xl space-y-6">
+          <div className="p-8 rounded-2xl bg-white border border-line shadow-2xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -112,7 +112,7 @@ export default function ExchangeRatePage() {
 
               <div className="p-6 bg-slate-950/80 border border-slate-800 rounded-2xl text-right space-y-1">
                 <span className="text-[10px] text-slate-400 uppercase font-semibold">Pair Currency</span>
-                <div className="text-lg font-bold text-emerald-400">USD / UGX</div>
+                <div className="text-lg font-bold text-brand-600">USD / UGX</div>
                 <div className="text-[11px] text-slate-500">Digital USD &rarr; Cash UGX</div>
               </div>
             </div>
@@ -140,14 +140,14 @@ export default function ExchangeRatePage() {
                       onChange={(e) => setNewRate(e.target.value)}
                       placeholder="e.g. 3700"
                       required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-32 pr-4 text-white text-sm font-extrabold focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-32 pr-4 text-white text-sm font-extrabold focus:outline-none focus:border-brand-600"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={updateMutation.isPending}
-                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-[#ffffff] font-bold text-sm shadow-lg shadow-brand-600/20 transition-all flex items-center justify-center gap-2"
                   >
                     <RefreshCw className={`w-4 h-4 ${updateMutation.isPending ? 'animate-spin' : ''}`} />
                     {updateMutation.isPending ? 'Updating Rate...' : 'Set Active Rate'}
@@ -165,7 +165,7 @@ export default function ExchangeRatePage() {
           {isAdminOrManager && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-6 space-y-4">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <History className="w-5 h-5 text-emerald-400" />
+                <History className="w-5 h-5 text-brand-600" />
                 Exchange Rate Audit History
               </h3>
 
@@ -202,7 +202,7 @@ export default function ExchangeRatePage() {
                           <td className="py-3 px-4 text-slate-200">
                             {h.baseCurrency} &rarr; {h.targetCurrency}
                           </td>
-                          <td className="py-3 px-4 text-right font-extrabold text-emerald-400">
+                          <td className="py-3 px-4 text-right font-extrabold text-brand-600">
                             1 USD = {h.rate.toLocaleString()} UGX
                           </td>
                           <td className="py-3 px-4 text-slate-300 font-sans text-xs">

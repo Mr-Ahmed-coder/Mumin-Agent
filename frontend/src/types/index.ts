@@ -114,6 +114,7 @@ export interface CashSession {
   openingCash: number;
   openingBalances?: OpeningBalance[];
   reconciliationPreview?: AccountReconciliationPreview[];
+  closingEligibility?: { ready: boolean; reason?: string };
   closingHistory?: ClosingRecord[];
   closingCashSystem: number;
   closingCashActual?: number;
@@ -139,7 +140,8 @@ export interface OpeningBalance {
 }
 
 export interface ConfirmedMovement {
-  movementType: 'CASH_ADDED' | 'CASH_WITHDRAWN' | 'CASH_PAID_OUT' | 'WALLET_RECEIVED';
+  movementType: 'CASH_ADDED' | 'CASH_WITHDRAWN' | 'CASH_PAID_OUT' | 'WALLET_RECEIVED' | 'EXCHANGE' |
+    'REVERSAL' | 'ADJUSTMENT' | 'EXPENSE' | 'CUSTOMER_DEPOSIT' | 'CUSTOMER_WITHDRAWAL' | 'CREDIT_REPAYMENT';
   direction: 'IN' | 'OUT';
   amount: number;
   currency: 'UGX' | 'USD';
@@ -149,8 +151,9 @@ export interface ConfirmedMovement {
 export interface AccountReconciliationPreview {
   accountId?: string;
   openingBalanceId?: string;
-  accountType: OpeningBalance['accountType'];
-  provider: OpeningBalance['provider'];
+  accountType: OpeningBalance['accountType'] | 'LEDGER_CASH' | 'LEDGER_WALLET';
+  provider: string;
+  accountName?: string;
   currency: OpeningBalance['currency'];
   openingBalance: number;
   confirmedMovements: ConfirmedMovement[];

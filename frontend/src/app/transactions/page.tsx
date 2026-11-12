@@ -77,7 +77,7 @@ export default function TransactionsListPage() {
             </div>
             <Link
               href="/transactions/new"
-              className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-emerald-600/20 transition-all self-start"
+              className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-brand-600/20 transition-all self-start"
             >
               <ArrowLeftRight className="w-4 h-4" />
               Process New Exchange
@@ -93,14 +93,14 @@ export default function TransactionsListPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by transaction number, reference number or phone..."
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all text-sm"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-600 transition-all text-sm"
               />
             </div>
 
             <select
               value={walletFilter}
               onChange={(e) => setWalletFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 text-slate-300 text-sm focus:outline-none focus:border-emerald-500"
+              className="bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 text-slate-300 text-sm focus:outline-none focus:border-brand-600"
             >
               <option value="">All Wallet Providers</option>
               {Object.entries(WALLET_LABELS).map(([key, label]) => (
@@ -113,7 +113,7 @@ export default function TransactionsListPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 text-slate-300 text-sm focus:outline-none focus:border-emerald-500"
+              className="bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 text-slate-300 text-sm focus:outline-none focus:border-brand-600"
             >
               <option value="">All Statuses</option>
               <option value="COMPLETED">Completed</option>
@@ -156,7 +156,7 @@ export default function TransactionsListPage() {
                   ) : (
                     transactions.map((txn) => (
                       <tr key={txn._id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-medium text-emerald-400 text-xs">
+                        <td className="py-3.5 px-4 font-mono font-medium text-brand-600 text-xs">
                           {txn.transactionNumber}
                         </td>
                         <td className="py-3.5 px-4 text-xs text-slate-400">
@@ -175,13 +175,13 @@ export default function TransactionsListPage() {
                         <td className="py-3.5 px-4 text-right font-semibold text-slate-100 font-mono">
                           ${(txn.amountReceivedUSD || txn.amountReceived).toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-medium text-teal-400 font-mono">
+                        <td className="py-3.5 px-4 text-right font-medium text-ink font-mono">
                           ${(txn.serviceFeeUSD || txn.serviceFee).toLocaleString()}
                         </td>
                         <td className="py-3.5 px-4 text-right font-medium text-slate-400 font-mono">
                           {(txn.exchangeRateUGX || 3700).toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-bold text-emerald-400 font-mono">
+                        <td className="py-3.5 px-4 text-right font-bold text-brand-600 font-mono">
                           UGX {(txn.cashPaidUGX || txn.cashPaid).toLocaleString()}
                         </td>
                         <td className="py-3.5 px-4">
@@ -198,7 +198,7 @@ export default function TransactionsListPage() {
                         <td className="py-3.5 px-4 text-center space-x-1">
                           <button
                             onClick={() => setSelectedTxn(txn)}
-                            className="p-1.5 inline-block text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
+                            className="p-1.5 inline-block text-slate-400 hover:text-brand-600 hover:bg-slate-800 rounded-lg transition-colors"
                             title="View Receipt"
                           >
                             <Eye className="w-4 h-4" />
@@ -233,7 +233,7 @@ export default function TransactionsListPage() {
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-6">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div>
-                <span className="text-xs font-mono text-emerald-400 font-bold">
+                <span className="text-xs font-mono text-brand-600 font-bold">
                   {selectedTxn.transactionNumber}
                 </span>
                 <h3 className="text-lg font-bold text-white">Transaction Details</h3>
@@ -269,18 +269,18 @@ export default function TransactionsListPage() {
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Service Fee:</span>
-                <span className="font-semibold text-teal-400">${selectedTxn.serviceFee.toLocaleString()}</span>
+                <span className="font-semibold text-ink">${selectedTxn.serviceFee.toLocaleString()}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Cash Paid Out:</span>
-                <span className="font-bold text-emerald-400">${selectedTxn.cashPaid.toLocaleString()}</span>
+                <span className="font-bold text-brand-600">${selectedTxn.cashPaid.toLocaleString()}</span>
               </div>
             </div>
 
             <div className="pt-4 flex justify-end">
               <button
                 onClick={() => setSelectedTxn(null)}
-                className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold"
+                className="px-5 py-2 bg-white hover:bg-brand-50 border border-line text-white rounded-xl text-xs font-semibold"
               >
                 Close
               </button>
@@ -314,7 +314,7 @@ export default function TransactionsListPage() {
 
             <div className="space-y-4">
               <p className="text-xs text-slate-300">
-                Are you sure you want to cancel transaction <strong className="text-emerald-400">{cancelModalTxn.transactionNumber}</strong>?
+                Are you sure you want to cancel transaction <strong className="text-brand-600">{cancelModalTxn.transactionNumber}</strong>?
                 This will reverse customer volume statistics.
               </p>
 

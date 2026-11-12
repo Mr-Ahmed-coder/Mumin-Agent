@@ -11,6 +11,7 @@ import { Types } from 'mongoose';
 import { env } from '../config/env';
 import { ExchangeRate } from '../models/ExchangeRate';
 import { readLedgerBalances } from '../services/ledgerRead.service';
+import { closeLedgerShift, ledgerCloseInput, ledgerClosingEligibility, previewLedgerClose, reopenLedgerShift } from '../services/ledgerClosing.service';
 import { rejectExpandedLegacyWrite } from '../services/legacyMovementGuard.service';
 import { useLedgerIntegration, postLegacyFinancialRequest } from '../services/legacyLedgerAdapter.service';
 import { expandedOpeningSchema, getOpeningAccountCatalog, prepareOpeningAccounts } from '../services/openingAccounts.service';
@@ -58,7 +59,7 @@ export const openExpandedCashSession = asyncHandler(async (req: Request, res: Re
     action: 'OPENING_BALANCES_RECORDED', resource: 'cash-sessions', resourceId: String(session._id),
     ipAddress: req.ip, userAgent: req.headers['user-agent'],
     details: { accountOpenings: accounts, openingExchangeRate: session.openingExchangeRate, developmentOnly: true } });
-  return ApiResponse.created(res, 'Development shift opened. Closing is blocked until account movements are supported.', session);
+  return ApiResponse.created(res, 'Development shift opened with ledger tracking.', session);
 });
 
 export const getCurrentCashSession = asyncHandler(async (req: Request, res: Response) => {
@@ -85,7 +86,12 @@ export const getCurrentCashSession = asyncHandler(async (req: Request, res: Resp
 
   let currentCashBalance: number | undefined =
     activeSession.openingCash + totalCashAdded - totalCashWithdrawn - totalCashPaidOut;
-  const accountBalances = await readLedgerBalances(activeSession);
+  const ledgerShift = activeSession.openingVersion === 2 || activeSession.ledgerVersion === 1;
+  const closingEligibility = ledgerShift ? await ledgerClosingEligibility(activeSession) : undefined;
+  const accountBalances = await readLedgerBalances(activeSession).catch(error => {
+    if (closingEligibility?.ready === false) return undefined;
+    throw error;
+  });
   if (activeSession.ledgerVersion === 1) {
     currentCashBalance = accountBalances?.find(account => account.id === 'CASH_UGX')?.balance;
   }
@@ -101,6 +107,7 @@ export const getCurrentCashSession = asyncHandler(async (req: Request, res: Resp
     totalCashAdded,
     totalCashWithdrawn,
     reconciliationPreview,
+    closingEligibility,
   });
 });
 
@@ -290,7 +297,7 @@ export const closeCashSession = asyncHandler(async (req: Request, res: Response)
     throw ApiError.badRequest('No cash session found to close');
   }
   assertOpenSessionModification(session.status, session.cashierId.toString(), String(cashierId));
-  if (session.openingVersion === 2 || session.ledgerVersion === 1) throw ApiError.badRequest('Closing is blocked until complete ledger reconciliation is verified. No account has been marked balanced.');
+  if (session.openingVersion === 2 || session.ledgerVersion === 1) throw ApiError.badRequest('Closing is blocked on the legacy endpoint. Use ledger shift closing.');
 
   const transactions = await Transaction.find({
     cashSessionId: session._id,
@@ -365,12 +372,25 @@ export const closeCashSession = asyncHandler(async (req: Request, res: Response)
   return ApiResponse.success(res, 'Cash session closed and reconciled successfully', closedSession);
 });
 
+export const getLedgerClose = asyncHandler(async (req: Request, res: Response) =>
+  ApiResponse.success(res, 'Verified closing balances', await previewLedgerClose(req.params.id, req.user!)));
+
+export const confirmLedgerClose = asyncHandler(async (req: Request, res: Response) => {
+  const input = ledgerCloseInput.safeParse(req.body);
+  if (!input.success) throw ApiError.badRequest('Enter a valid actual balance for each account and reload the closing preview if needed.');
+  return ApiResponse.success(res, 'Shift closed and reconciled', await closeLedgerShift(req.params.id, req.user!, input.data));
+});
+
 export const reopenCashSession = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const session = await CashSession.findById(id);
 
   if (!session) {
     throw ApiError.notFound('Cash session not found');
+  }
+
+  if (session.openingVersion === 2 || session.ledgerVersion === 1) {
+    return ApiResponse.success(res, 'Ledger shift reopened', await reopenLedgerShift(id, req.user!));
   }
 
   if (session.status === 'OPEN') {

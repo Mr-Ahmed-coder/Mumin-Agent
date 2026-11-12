@@ -3,10 +3,119 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    background: #F4F7FC;
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans selection:bg-emerald-500 selection:text-white;
+    @apply min-h-screen bg-slate-950 text-slate-100 antialiased font-sans selection:bg-blue-200 selection:text-ink;
+    background: #F4F7FC;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
+
+  input,
+  select,
+  textarea {
+    color-scheme: light;
   }
 }
+
+@layer components {
+  .financial-surface {
+    @apply rounded-[1.75rem] border border-white/80 bg-white shadow-soft;
+  }
+
+  .financial-card {
+    @apply rounded-2xl border border-slate-800 bg-white shadow-card;
+  }
+
+  .financial-pill {
+    @apply inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700;
+  }
+}
+
+/* The original application used dark-mode utility tokens everywhere. The
+   light financial theme keeps those existing components readable while the
+   screens are migrated without altering their workflow logic. */
+.text-white {
+  color: #162447 !important;
+}
+
+:is(a, button)[class*='bg-blue-'][class~='text-white'],
+:is(a, button)[class*='bg-indigo-'][class~='text-white'],
+:is(a, button)[class*='bg-emerald-'][class~='text-white'],
+:is(a, button)[class*='bg-teal-'][class~='text-white'],
+:is(a, button)[class*='bg-red-'][class~='text-white'],
+:is(a, button)[class*='from-blue-'][class~='text-white'],
+:is(a, button)[class*='from-indigo-'][class~='text-white'],
+:is(a, button)[class*='from-emerald-'][class~='text-white'],
+:is(a, button)[class*='from-teal-'][class~='text-white'] {
+  color: #ffffff !important;
+}
+
+[class*='bg-blue-'] > .text-white,
+[class*='from-blue-'] .text-white,
+[class*='from-cyan-'] .text-white {
+  color: #ffffff !important;
+}
+
+[class*='bg-blue-'][class~='text-white'],
+[class*='bg-brand-'][class~='text-white'],
+[class*='from-blue-'][class~='text-white'],
+[class*='from-cyan-'][class~='text-white'] {
+  color: #ffffff !important;
+}
+
+/* Disabled controls use neutral colors, including legacy form buttons. */
+button:disabled,
+a[aria-disabled="true"] {
+  background-color: #F4F7FC !important;
+  background-image: none !important;
+  border-color: #DCE4F2 !important;
+  color: #6B7A99 !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+.text-slate-950 {
+  color: #162447 !important;
+}
+
+[class*='fixed'][class*='inset-0'][class*='bg-slate-950'] {
+  background-color: rgba(23, 37, 75, 0.48) !important;
+}
+
+table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+/* Dashboard-only contrast corrections; legacy theme tokens remain untouched. */
+.dashboard-workspace .text-slate-500,
+.dashboard-workspace .text-slate-400 {
+  color: #6B7A99;
+}
+.dashboard-workspace .text-emerald-400 { color: #047857; }
+.dashboard-workspace .text-amber-400 { color: #92400e; }
+.dashboard-workspace .text-red-300,
+.dashboard-workspace .text-red-400 { color: #b91c1c; }
+.dashboard-workspace .text-emerald-200 { color: #047857; }
+
+/* Semantic messages remain distinct and legible on light surfaces. */
+.text-emerald-400 { color: #047857; }
+.text-amber-400 { color: #92400e; }
+.text-red-400 { color: #b91c1c; }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -14,12 +123,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #F4F7FC;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #DCE4F2;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #6B7A99;
 }

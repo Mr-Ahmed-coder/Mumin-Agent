@@ -11,6 +11,8 @@ import {
   closeCashSession,
   reopenCashSession,
   getCashSessionsList,
+  getLedgerClose,
+  confirmLedgerClose,
 } from '../controllers/cash.controller';
 import { authenticate, authorize } from '../middlewares/auth';
 import { UserRole } from '../constants/roles';
@@ -27,6 +29,8 @@ router.use(authenticate);
 if (env.NODE_ENV === 'development') {
   router.get('/opening-accounts', authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER), getOpeningAccounts);
   router.post('/open-accounts', authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER), openExpandedCashSession);
+  router.get('/:id/ledger-close', authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER), getLedgerClose);
+  router.post('/:id/ledger-close', authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER), confirmLedgerClose);
 }
 
 router.get('/current', getCurrentCashSession);

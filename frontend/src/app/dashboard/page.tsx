@@ -8,17 +8,13 @@ import {
   ArrowLeftRight,
   BarChart3,
   ChevronRight,
-  History,
-  Landmark,
   Loader2,
   LockKeyhole,
   PlusCircle,
   ReceiptText,
   RefreshCw,
   Trash2,
-  UserRound,
   Wallet,
-  Wifi,
   X,
 } from 'lucide-react';
 import {
@@ -73,28 +69,26 @@ function MetricCard({
   value: string;
   description: string;
   icon: typeof Wallet;
-  accent?: 'blue' | 'cyan' | 'amber';
+  accent?: 'blue';
   unit?: string;
 }) {
   const colors = {
     blue: 'bg-blue-50 text-blue-600 border-blue-100',
-    cyan: 'bg-cyan-50 text-cyan-600 border-cyan-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100',
   };
 
   return (
     <section className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex items-start justify-between gap-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-[#475569]">{label}</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-[#6B7A99]">{label}</p>
         <div className={`rounded-xl border p-2.5 ${colors[accent]}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>
-      <p className="mt-3 break-words text-xl font-extrabold leading-tight tracking-tight text-[#17254b] 2xl:text-2xl">
+      <p className="mt-3 break-words text-xl font-extrabold leading-tight tracking-tight text-[#162447] 2xl:text-2xl">
         {value}
-        {unit && <span className="ml-2 text-sm font-bold text-[#475569]">{unit}</span>}
+        {unit && <span className="ml-2 text-sm font-bold text-[#6B7A99]">{unit}</span>}
       </p>
-      <p className="mt-2 text-xs leading-5 text-[#475569]">{description}</p>
+      <p className="mt-2 text-xs leading-5 text-[#6B7A99]">{description}</p>
     </section>
   );
 }
@@ -124,10 +118,10 @@ function RecentTransactions({
   cashierView: boolean;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-blue-100 bg-white text-[#17254b] shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-blue-100 bg-white text-[#162447] shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 px-5 py-4 sm:px-6">
         <div>
-          <h2 className="font-bold text-[#17254b]">Recent Transactions</h2>
+          <h2 className="font-bold text-[#162447]">Recent Transactions</h2>
           <p className="mt-1 text-xs text-slate-500">
             {cashierView ? 'Your latest customer exchanges.' : 'Latest customer exchanges across the shop.'}
           </p>
@@ -159,8 +153,8 @@ function RecentTransactions({
                     <p className="break-all font-mono text-xs font-bold text-blue-700">{transaction.transactionNumber}</p>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusStyle(transaction.status)}`}>{transaction.status.replace('_', ' ')}</span>
                   </div>
-                  <p className="mt-1 break-words text-sm font-semibold text-[#17254b]">{(transaction.customerId as any)?.name || transaction.customerPhone || 'Walk-in Customer'}</p>
-                  <p className="mt-0.5 break-words text-xs text-[#475569]">{accountLabel(transaction.walletProvider)}</p>
+                  <p className="mt-1 break-words text-sm font-semibold text-[#162447]">{(transaction.customerId as any)?.name || transaction.customerPhone || 'Walk-in Customer'}</p>
+                  <p className="mt-0.5 break-words text-xs text-[#6B7A99]">{accountLabel(transaction.walletProvider)}</p>
                 </div>
                 <p className="text-xs text-slate-500">
                   {new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -169,11 +163,11 @@ function RecentTransactions({
               <div className="grid grid-cols-2 gap-3 rounded-xl bg-blue-50 p-3 text-xs">
                 <div>
                   <p className="text-slate-500">Received (USD)</p>
-                  <p className="mt-1 break-words font-bold text-[#17254b]">{formatMoney('USD', transaction.amountReceivedUSD ?? transaction.amountReceived)}</p>
+                  <p className="mt-1 break-words font-bold text-[#162447]">{formatMoney('USD', transaction.amountReceivedUSD ?? transaction.amountReceived)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-slate-500">Cash Paid (UGX)</p>
-                  <p className="mt-1 break-words font-bold text-[#17254b]">{formatMoney('UGX', transaction.cashPaidUGX ?? transaction.cashPaid)}</p>
+                  <p className="mt-1 break-words font-bold text-[#162447]">{formatMoney('UGX', transaction.cashPaidUGX ?? transaction.cashPaid)}</p>
                 </div>
               </div>
             </div>
@@ -184,7 +178,7 @@ function RecentTransactions({
       {/* Desktop Table View */}
       <div className="hidden overflow-x-auto xl:block" tabIndex={0} role="region" aria-label="Recent exchange transaction table">
         <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="bg-blue-50 text-[11px] uppercase tracking-wider text-[#475569]">
+          <thead className="bg-blue-50 text-[11px] uppercase tracking-wider text-[#6B7A99]">
             <tr>
               <th className="px-6 py-3">Transaction</th>
               <th className="px-4 py-3">Customer</th>
@@ -221,21 +215,21 @@ function RecentTransactions({
                     </p>
                   </td>
                   <td className="px-4 py-4">
-                    <p className="font-medium text-[#17254b]">{(transaction.customerId as any)?.name || transaction.customerPhone || 'Walk-in Customer'}</p>
+                    <p className="font-medium text-[#162447]">{(transaction.customerId as any)?.name || transaction.customerPhone || 'Walk-in Customer'}</p>
                     <p className="mt-1 text-xs text-slate-500">{transaction.customerPhone}</p>
                   </td>
                   <td className="px-4 py-4 text-xs text-slate-300">
-                    <span className="inline-block rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-[#17254b]">
+                    <span className="inline-block rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-[#162447]">
                       {accountLabel(transaction.walletProvider)}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-right font-mono font-semibold text-[#17254b]">
+                  <td className="px-4 py-4 text-right font-mono font-semibold text-[#162447]">
                     {formatMoney('USD', transaction.amountReceivedUSD ?? transaction.amountReceived)}
                   </td>
                   <td className="px-4 py-4 text-right font-mono font-semibold text-blue-700">
                     {formatMoney('USD', transaction.serviceFeeUSD ?? transaction.serviceFee)}
                   </td>
-                  <td className="px-6 py-4 text-right font-mono font-bold text-[#17254b]">
+                  <td className="px-6 py-4 text-right font-mono font-bold text-[#162447]">
                     {formatMoney('UGX', transaction.cashPaidUGX ?? transaction.cashPaid)}
                   </td>
                   <td className="px-4 py-4">
@@ -270,22 +264,22 @@ function ActionLink({
 }) {
   const classes = `group flex min-h-24 w-full items-center gap-3 rounded-2xl border p-4 text-left outline-none transition duration-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
     disabled || loading
-      ? 'cursor-not-allowed border-slate-700 border-dashed bg-[#f1f5f9] text-[#475569]'
+      ? 'cursor-not-allowed border-slate-700 border-dashed bg-[#F4F7FC] text-[#6B7A99]'
       : primary
-        ? 'border-blue-700 bg-gradient-to-r from-[#1d4ed8] to-[#0e7490] text-[#ffffff] shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 hover:from-[#1e40af] hover:to-[#155e75] hover:shadow-xl'
-        : 'border-slate-800 bg-white text-[#17254b] shadow-card hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50'
+        ? 'border-blue-700 bg-[#2F63F5] text-[#ffffff] shadow-sm hover:bg-[#2452D6]'
+        : 'border-[#DCE4F2] bg-white text-[#162447] shadow-sm hover:border-blue-300 hover:bg-blue-50'
   }`;
 
   const content = (
     <>
-      <div className={`shrink-0 rounded-xl p-3 ${disabled || loading ? 'bg-[#e2e8f0] text-[#475569]' : primary ? 'bg-white/15 text-[#ffffff]' : 'bg-blue-50 text-[#1d4ed8]'}`}>
+      <div className={`shrink-0 rounded-xl p-3 ${disabled || loading ? 'bg-[#DCE4F2] text-[#6B7A99]' : primary ? 'bg-white/15 text-[#ffffff]' : 'bg-blue-50 text-[#2F63F5]'}`}>
         {loading ? <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" /> : <Icon className="h-6 w-6" aria-hidden="true" />}
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`break-words font-extrabold ${disabled || loading ? 'text-[#475569]' : primary ? 'text-[#ffffff]' : 'text-[#17254b]'}`}>{loading ? 'Checking shift...' : label}</p>
-        <p className={`mt-1 text-xs leading-5 ${primary && !disabled && !loading ? 'text-[#ffffff]' : 'text-[#475569]'}`}>{description}</p>
+        <p className={`break-words font-extrabold ${disabled || loading ? 'text-[#6B7A99]' : primary ? 'text-[#ffffff]' : 'text-[#162447]'}`}>{label}</p>
+        <p className={`mt-1 text-xs leading-5 ${primary && !disabled && !loading ? 'text-[#ffffff]' : 'text-[#6B7A99]'}`}>{description}</p>
       </div>
-      {!disabled && !loading && <ChevronRight className={`h-5 w-5 shrink-0 transition group-hover:translate-x-0.5 ${primary ? 'text-[#ffffff]' : 'text-[#1d4ed8]'}`} aria-hidden="true" />}
+      {!disabled && !loading && <ChevronRight className={`h-5 w-5 shrink-0 transition group-hover:translate-x-0.5 ${primary ? 'text-[#ffffff]' : 'text-[#2F63F5]'}`} aria-hidden="true" />}
     </>
   );
 
@@ -373,7 +367,8 @@ export default function DashboardPage() {
     queryFn: async () => (await api.get(`/cash-sessions/${selectedShift!._id}`)).data.data,
     enabled: Boolean(selectedShift?.ledgerVersion === 1),
   });
-  const canOfferClosing = activeSession && activeSession.ledgerVersion !== 1 && activeSession.openingVersion !== 2;
+  const ledgerClosing = activeSession?.ledgerVersion === 1 || activeSession?.openingVersion === 2;
+  const canOfferClosing = activeSession && (!ledgerClosing || activeSession.closingEligibility?.ready === true);
 
   const isPermissionDenied = [statsError, sessionError, recentError].some(
     (error: any) => error?.response?.status === 403
@@ -408,23 +403,21 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-slate-950">
+    <div className="dashboard-workspace flex min-h-screen overflow-x-hidden bg-[#F4F7FC] text-[#162447]">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Navbar />
-        <main className="mx-auto w-full max-w-[1600px] flex-1 space-y-7 p-4 sm:p-6 lg:p-8">
-          <header className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 p-6 shadow-xl shadow-blue-500/20 sm:flex sm:items-end sm:justify-between sm:gap-6 lg:p-8">
-            <div className="pointer-events-none absolute -right-12 -top-16 h-52 w-52 rounded-full border-[28px] border-white/10" />
-            <div className="pointer-events-none absolute bottom-[-5rem] right-28 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+        <Navbar compact />
+        <main className="mx-auto w-full max-w-[1600px] flex-1 space-y-6 p-4 sm:p-6 lg:p-8">
+          <header className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-50">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#6B7A99]">
                 {isCashier ? 'Cashier Workspace' : 'Business Overview'}
               </p>
-              <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                {isCashier ? `Ready to serve, ${user?.name}` : 'Today at Mumin Agent'}
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#162447] sm:text-3xl">
+                Today at Mumin Agent
               </h1>
               {isCashier && activeSession?.openedAt && !isSessionError && (
-                <p className="mt-2 text-sm text-white">Opened at {new Date(activeSession.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="mt-2 text-sm text-[#6B7A99]">{user?.name} · Opened at {new Date(activeSession.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               )}
             </div>
             <span
@@ -482,43 +475,20 @@ export default function DashboardPage() {
               <h2 className="font-bold text-white">Quick Actions</h2>
             </div>
 
-            {isCashier ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {isSessionLoading ? (
-                  <ActionLink href="/cash-sessions" label="Shift Status" description="Checking whether your shift is open." icon={Wallet} loading />
-                ) : isSessionError ? (
-                  <ActionLink href="/cash-sessions" label="Check Shift" description="Shift status unavailable. Open Cash Sessions to retry." icon={Wallet} />
-                ) : activeSession ? (
-                  <ActionLink href="/transactions/new" label="New Transaction" description="Record a customer payment and UGX cash payout." icon={PlusCircle} primary />
-                ) : (
-                  <ActionLink href="/cash-sessions" label="Open Shift" description="Enter opening balances and start serving customers." icon={Wallet} primary />
-                )}
-
-                {!activeSession && !isSessionLoading && !isSessionError && (
-                  <ActionLink href="/transactions/new" label="New Transaction" description="Open a shift before recording transactions." icon={PlusCircle} disabled />
-                )}
-                <ActionLink href="/transactions" label="Transaction History" description="Search and review your previous exchanges." icon={History} />
-                {activeSession && !isSessionError && (
-                  <>
-                    {canOfferClosing
-                      ? <ActionLink href="/cash-sessions" label="Close Shift" description="Count cash and review the shift." icon={LockKeyhole} />
-                      : <ActionLink href="/cash-sessions" label="Manage Shift" description="View balances or record cash movements." icon={Wallet} />}
-                    <ActionLink href="/internet-credit" label="Internet Credit" description="Record UGX credit and repayments." icon={Wifi} />
-                    <ActionLink href="/customer-deposits" label="Customer Deposits" description="Record UGX safekeeping movements." icon={Landmark} />
-                  </>
-                )}
-                <ActionLink href="/customers" label="Customers" description="Find customers and review their activity." icon={UserRound} />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <ActionLink href="/reports" label="Reports" description="Review financial and operational summaries." icon={BarChart3} primary />
-                <ActionLink href="/cash-sessions" label="Cash Sessions" description="Review open shifts and closing reconciliations." icon={Wallet} />
-                <ActionLink href="/transactions" label="Transactions" description="Review exchange activity across the shop." icon={History} />
-                <ActionLink href="/customers" label="Customers" description="Review customer records and activity." icon={UserRound} />
-                <ActionLink href="/internet-credit" label="Internet Credit" description="Review UGX credit and repayments." icon={Wifi} />
-                <ActionLink href="/customer-deposits" label="Customer Deposits" description="Review customer-owned UGX balances." icon={Landmark} />
-              </div>
-            )}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+              <ActionLink href="/cash-sessions" label="Open Shift" icon={Wallet}
+                description={!isCashier ? 'Manage opening balances in Shifts & Closing.' : isSessionLoading ? 'Checking your shift…' : isSessionError ? 'Shift unavailable. Retry above.' : activeSession ? 'Your shift is already open.' : 'Record your opening balances.'}
+                loading={isCashier && isSessionLoading} disabled={isCashier && (isSessionError || Boolean(activeSession))} primary={isCashier && !activeSession && !isSessionError} />
+              <ActionLink href="/transactions/new" label="New Transaction" icon={PlusCircle}
+                description={!isCashier ? 'Record exchanges from the cashier workspace.' : isSessionLoading ? 'Checking your shift…' : isSessionError ? 'Shift unavailable. Retry above.' : activeSession ? 'Record a payment and UGX payout.' : 'Open a shift before recording transactions.'}
+                loading={isCashier && isSessionLoading} disabled={!isCashier || isSessionError || !activeSession} primary={isCashier && Boolean(activeSession)} />
+              <ActionLink href={isCashier && activeSession && ledgerClosing ? `/cash-sessions/${activeSession._id}/close` : '/cash-sessions'} label="Close Shift" icon={LockKeyhole}
+                description={!isCashier ? 'Review closing records in Shifts & Closing.' : isSessionLoading ? 'Checking your shift…' : isSessionError ? 'Shift unavailable. Retry above.' : !activeSession ? 'No open shift to close.' : canOfferClosing ? 'Count cash and reconcile each account.' : activeSession.closingEligibility?.reason || 'Closing balances are unavailable.'}
+                loading={isCashier && isSessionLoading} disabled={isCashier && (isSessionError || !canOfferClosing)} />
+              <ActionLink href="/reports" label="Daily Report" icon={BarChart3}
+                description={canReviewShop ? 'Review today’s exchanges and service fees.' : 'Available to Admin and Manager.'}
+                disabled={!canReviewShop} primary={canReviewShop} />
+            </div>
           </section>
 
           {/* Metrics Grid */}
@@ -532,7 +502,7 @@ export default function DashboardPage() {
             ) : (
               <>
                 <MetricCard
-                  label="Available Cash (UGX)"
+                  label="UGX Cash"
                   value={
                     isCashier
                       ? isSessionError
@@ -567,7 +537,7 @@ export default function DashboardPage() {
                   value={typeof stats?.todayServiceFeesUSD === 'number' ? `USD ${formatAmount(stats.todayServiceFeesUSD)}` : 'Unavailable'}
                   description={isCashier ? 'USD service fees from your completed exchanges today.' : 'Total USD service fees collected today.'}
                   icon={BarChart3}
-                  accent="amber"
+                  accent="blue"
                 />
 
               </>
@@ -578,9 +548,9 @@ export default function DashboardPage() {
           {selectedShift && (
             <div className="space-y-3">
               {activeSessions.length > 1 && (
-                <label className="flex flex-wrap items-center gap-2 text-sm font-semibold text-[#17254b]">
+                <label className="flex flex-wrap items-center gap-2 text-sm font-semibold text-[#162447]">
                   View balances for
-                  <select value={selectedShift._id} onChange={event => setSelectedShiftId(event.target.value)} className="max-w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-[#17254b] focus-visible:outline focus-visible:outline-blue-700">
+                  <select value={selectedShift._id} onChange={event => setSelectedShiftId(event.target.value)} className="max-w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-[#162447] focus-visible:outline focus-visible:outline-blue-700">
                     {activeSessions.map(session => <option key={session._id} value={session._id}>
                       {typeof session.cashierId === 'object' && session.cashierId?.name ? session.cashierId.name + ' · ' : ''}{session.sessionNumber}
                     </option>)}
@@ -628,12 +598,12 @@ export default function DashboardPage() {
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={dailyStats}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf5" />
-                        <XAxis dataKey="_id" stroke="#687895" fontSize={11} />
-                        <YAxis stroke="#687895" fontSize={11} />
-                        <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#dce8ff', borderRadius: 14, color: '#17254b', boxShadow: '0 16px 32px -20px rgba(48, 74, 135, 0.45)' }} />
-                        <Area type="monotone" dataKey="volumeUSD" name="Volume (USD)" stroke="#3e5bff" fill="#3e5bff" fillOpacity={0.16} />
-                        <Area type="monotone" dataKey="serviceFeesUSD" name="Service Fees (USD)" stroke="#20b9f5" fill="#20b9f5" fillOpacity={0.12} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#DCE4F2" />
+                        <XAxis dataKey="_id" stroke="#6B7A99" fontSize={11} />
+                        <YAxis stroke="#6B7A99" fontSize={11} />
+                        <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#DCE4F2', borderRadius: 14, color: '#162447', boxShadow: '0 16px 32px -20px rgba(48, 74, 135, 0.45)' }} />
+                        <Area type="monotone" dataKey="volumeUSD" name="Volume (USD)" stroke="#2F63F5" fill="#2F63F5" fillOpacity={0.16} />
+                        <Area type="monotone" dataKey="serviceFeesUSD" name="Service Fees (USD)" stroke="#162447" fill="#162447" fillOpacity={0.12} />
                       </AreaChart>
                     </ResponsiveContainer>
                   )}
@@ -673,7 +643,7 @@ export default function DashboardPage() {
                           <p className="mt-1 font-mono text-[11px] text-slate-500">{session.sessionNumber}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs font-bold text-emerald-400">OPEN</p>
+                          <p className="text-xs font-bold text-brand-600">OPEN</p>
                           <p className="mt-1 text-[11px] text-slate-400 font-mono">UGX {formatAmount(session.openingCash)}</p>
                         </div>
                       </Link>

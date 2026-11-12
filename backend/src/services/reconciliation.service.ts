@@ -26,8 +26,8 @@ export interface ActualBalanceInput {
 
 export type AccountReconciliationPreview = Omit<
   IAccountReconciliation,
-  'actualClosingBalance' | 'difference' | 'status'
->;
+  'actualClosingBalance' | 'difference' | 'status' | 'accountType' | 'provider'
+> & Pick<IOpeningBalance, 'accountType' | 'provider'>;
 
 const sum = (values: number[]): number => values.reduce((total, value) => total + value, 0);
 const cashPaidUGX = (transaction: ReconciliationTransaction): number =>
@@ -35,7 +35,7 @@ const cashPaidUGX = (transaction: ReconciliationTransaction): number =>
 const amountReceivedUSD = (transaction: ReconciliationTransaction): number =>
   transaction.amountReceivedUSD ?? transaction.amountReceived ?? 0;
 
-const accountKey = (account: Pick<ActualBalanceInput, 'accountType' | 'provider' | 'currency'>) =>
+const accountKey = (account: { accountType: string; provider: string; currency: string }) =>
   `${account.accountType}:${account.provider}:${account.currency}`;
 
 export const reconciliationAccountId = (account: { accountId?: string; openingBalanceId?: Types.ObjectId; accountType: string; provider: string; currency: string }) =>

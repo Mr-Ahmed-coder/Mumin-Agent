@@ -3,6 +3,7 @@ import { User } from '../models/User';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
+import { UserRole } from '../constants/roles';
 import bcrypt from 'bcryptjs';
 
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
@@ -37,6 +38,12 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
 export const createUser = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, phone, password, role, branchId } = req.body;
+
+  // Managers cannot create Admin accounts
+  if (role === UserRole.ADMIN && req.user?.role !== UserRole.ADMIN) {
+    throw ApiError.forbidden('Managers are not authorized to create Admin users.');
+  }
+
   const existing = await User.findOne({ email });
   if (existing) {
     throw ApiError.badRequest('User with this email already exists');
@@ -61,25 +68,45 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const updates = req.body;
 
-  const user = await User.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
-  if (!user) {
+  const targetUser = await User.findById(id);
+  if (!targetUser) {
     throw ApiError.notFound('User not found');
   }
 
-  return ApiResponse.success(res, 'User updated successfully', user);
+  // Managers cannot edit existing Admin accounts or promote users to Admin
+  if (req.user?.role !== UserRole.ADMIN) {
+    if (targetUser.role === UserRole.ADMIN) {
+      throw ApiError.forbidden('Managers are not authorized to edit Admin users.');
+    }
+    if (updates.role === UserRole.ADMIN) {
+      throw ApiError.forbidden('Managers are not authorized to promote users to Admin.');
+    }
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+
+  return ApiResponse.success(res, 'User updated successfully', updatedUser);
 });
 
 export const changeUserPassword = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { newPassword } = req.body;
 
+  const targetUser = await User.findById(id);
+  if (!targetUser) {
+    throw ApiError.notFound('User not found');
+  }
+
+  // Managers cannot change password of Admin users
+  if (targetUser.role === UserRole.ADMIN && req.user?.role !== UserRole.ADMIN) {
+    throw ApiError.forbidden('Managers are not authorized to change Admin user passwords.');
+  }
+
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-  const user = await User.findByIdAndUpdate(id, { password: hashedPassword }, { new: true });
-  if (!user) {
-    throw ApiError.notFound('User not found');
-  }
+  targetUser.password = hashedPassword;
+  await targetUser.save();
 
   return ApiResponse.success(res, 'User password updated successfully');
 });

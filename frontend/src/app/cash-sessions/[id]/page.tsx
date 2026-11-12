@@ -110,7 +110,7 @@ export default function SessionDetailsPage() {
               </Link>
               <div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-emerald-400 font-bold">
+                  <span className="text-xs font-mono text-brand-600 font-bold">
                     {session.sessionNumber}
                   </span>
                   <span
@@ -134,7 +134,7 @@ export default function SessionDetailsPage() {
               <button
                 disabled={reopenMutation.isPending}
                 onClick={() => reopenMutation.mutate()}
-                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-amber-600/20 transition-all self-start"
+                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-[#ffffff] font-bold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-brand-600/20 transition-all self-start"
               >
                 <RefreshCw className="w-4 h-4" />
                 {reopenMutation.isPending ? 'Reopening...' : 'Reopen Session (Manager)'}
@@ -152,7 +152,7 @@ export default function SessionDetailsPage() {
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <User className="w-5 h-5 text-emerald-400 shrink-0" />
+                <User className="w-5 h-5 text-brand-600 shrink-0" />
                 <div>
                   <span className="text-slate-400">Cashier:</span>
                   <div className="font-bold text-white text-sm">{(session.cashierId as any)?.name || 'Cashier'}</div>
@@ -161,7 +161,7 @@ export default function SessionDetailsPage() {
               </div>
 
               <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
-                <Clock className="w-5 h-5 text-teal-400 shrink-0" />
+                <Clock className="w-5 h-5 text-ink shrink-0" />
                 <div>
                   <span className="text-slate-400">Opened Time:</span>
                   <div className="font-bold text-slate-200">{new Date(session.openedAt).toLocaleString()}</div>
@@ -201,13 +201,13 @@ export default function SessionDetailsPage() {
 
             <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-1">
               <span className="text-xs font-semibold text-slate-400 uppercase">In-Shift Cash Adjustments (UGX)</span>
-              <p className="text-sm font-bold text-emerald-400">UGX +{totalCashAdded.toLocaleString()} Added</p>
-              <p className="text-sm font-bold text-amber-400">UGX -{totalCashWithdrawn.toLocaleString()} Withdrawn</p>
+              <p className="text-sm font-bold text-brand-600">UGX +{totalCashAdded.toLocaleString()} Added</p>
+              <p className="text-sm font-bold text-ink">UGX -{totalCashWithdrawn.toLocaleString()} Withdrawn</p>
             </div>
 
-            <div className="p-5 bg-slate-900 border border-emerald-500/30 rounded-2xl shadow-xl space-y-1">
-              <span className="text-xs font-semibold text-emerald-400 uppercase">Expected Closing Cash (UGX)</span>
-              <p className="text-2xl font-extrabold text-emerald-400">UGX {expectedClosingCash.toLocaleString()}</p>
+            <div className="p-5 bg-slate-900 border border-line rounded-2xl shadow-xl space-y-1">
+              <span className="text-xs font-semibold text-brand-600 uppercase">Expected Closing Cash (UGX)</span>
+              <p className="text-2xl font-extrabold text-brand-600">UGX {expectedClosingCash.toLocaleString()}</p>
             </div>
           </div>}
 
@@ -223,7 +223,7 @@ export default function SessionDetailsPage() {
                 <div key={record._id || record.closedAt} className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl space-y-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                      <p className="text-xs font-bold uppercase tracking-wider text-brand-600">
                         {index === 0 ? 'Latest Closing Record' : 'Previous Closing Record'}
                       </p>
                       <p className="mt-1 text-sm text-slate-300">Closed {new Date(record.closedAt).toLocaleString()}</p>
@@ -256,7 +256,7 @@ export default function SessionDetailsPage() {
                 </div>
                 <div className="p-4 bg-slate-950 rounded-xl border border-slate-800">
                   <span className="text-xs text-slate-400">Actual Closing Cash (UGX):</span>
-                  <p className="text-xl font-bold text-emerald-400 mt-1">
+                  <p className="text-xl font-bold text-brand-600 mt-1">
                     UGX {(session.closingCashActual ?? 0).toLocaleString()}
                   </p>
                 </div>
@@ -302,7 +302,7 @@ export default function SessionDetailsPage() {
                   ) : (
                     transactions.map((t) => (
                       <tr key={t._id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3 px-4 font-mono text-emerald-400 font-semibold text-xs">
+                        <td className="py-3 px-4 font-mono text-brand-600 font-semibold text-xs">
                           {t.transactionNumber}
                         </td>
                         <td className="py-3 px-4 font-medium text-slate-200">
@@ -316,10 +316,10 @@ export default function SessionDetailsPage() {
                         <td className="py-3 px-4 text-right font-semibold text-slate-100">
                           USD {(t.amountReceivedUSD ?? t.amountReceived).toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-right font-medium text-teal-400">
+                        <td className="py-3 px-4 text-right font-medium text-ink">
                           USD {(t.serviceFeeUSD ?? t.serviceFee).toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-emerald-400">
+                        <td className="py-3 px-4 text-right font-bold text-brand-600">
                           UGX {(t.cashPaidUGX ?? t.cashPaid).toLocaleString()}
                         </td>
                         <td className="py-3 px-4">

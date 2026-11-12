@@ -42,15 +42,15 @@ const providerName = (
 export default function OpeningBalancesGrid({ session }: OpeningBalancesGridProps) {
   if (session.openingVersion === 2) return (
     <section className="space-y-4">
-      <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">Development shift: account movement capture is incomplete. Closing is blocked; these are recorded opening balances, not reconciled current balances.</p>
+      <p className="text-sm text-[#6B7A99]">Recorded opening balances, before any shift movements.</p>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{session.accountOpenings?.map(account => (
         <div key={account.id} className="rounded-xl border border-slate-800 bg-white p-4">
-          <p className="text-sm font-bold text-[#17254b]">{account.name} ({account.currency})</p>
-          <p className="mt-2 text-xl font-bold text-[#17254b]">{account.currency} {account.amount.toLocaleString()}</p>
-          <p className="mt-2 text-xs text-[#475569]">Opening · {new Date(session.openedAt).toLocaleString()}</p>
+          <p className="text-sm font-bold text-[#162447]">{account.name} ({account.currency})</p>
+          <p className="mt-2 text-xl font-bold text-[#162447]">{account.currency} {account.amount.toLocaleString()}</p>
+          <p className="mt-2 text-xs text-[#6B7A99]">Opening · {new Date(session.openedAt).toLocaleString()}</p>
         </div>
       ))}</div>
-      {session.openingExchangeRate && <p className="text-sm text-[#475569]">Opening rate: USD 1 = UGX {session.openingExchangeRate.rate.toLocaleString()}</p>}
+      {session.openingExchangeRate && <p className="text-sm text-[#6B7A99]">Opening rate: USD 1 = UGX {session.openingExchangeRate.rate.toLocaleString()}</p>}
     </section>
   );
   return (

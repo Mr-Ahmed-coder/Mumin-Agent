@@ -2,6 +2,7 @@ import {
   AccountReconciliation,
   AccountReconciliationPreview,
   WALLET_LABELS,
+  WalletProvider,
 } from '@/types';
 import { reconciliationAccountId } from '@/lib/reconciliation';
 import { AlertTriangle, CheckCircle, Landmark, Smartphone, Wallet } from 'lucide-react';
@@ -16,6 +17,8 @@ const accountLabels = {
   PHYSICAL_CASH: 'Physical Cash',
   EVC: 'EVC',
   MOBILE_MONEY: 'Mobile Money',
+  LEDGER_CASH: 'Cash',
+  LEDGER_WALLET: 'Wallet',
 };
 
 const movementLabels = {
@@ -23,12 +26,21 @@ const movementLabels = {
   CASH_WITHDRAWN: 'Cash withdrawn',
   CASH_PAID_OUT: 'Customer cash payouts',
   WALLET_RECEIVED: 'Customer wallet receipts',
+  EXCHANGE: 'Exchanges',
+  REVERSAL: 'Reversals',
+  ADJUSTMENT: 'Authorized adjustments',
+  EXPENSE: 'Expenses',
+  CUSTOMER_DEPOSIT: 'Customer deposits',
+  CUSTOMER_WITHDRAWAL: 'Customer withdrawals',
+  CREDIT_REPAYMENT: 'Credit repayments',
 };
 
 const accountIcons = {
   PHYSICAL_CASH: Wallet,
   EVC: Smartphone,
   MOBILE_MONEY: Landmark,
+  LEDGER_CASH: Wallet,
+  LEDGER_WALLET: Smartphone,
 };
 
 const formatAmount = (currency: string, amount: number) =>
@@ -50,7 +62,7 @@ export default function ReconciliationAccounts({
         const accountId = reconciliationAccountId(account);
         const enteredActual = actualValues?.[accountId];
         const actual = hasActualBalance(account) ? account.actualClosingBalance : enteredActual;
-        const difference = typeof actual === 'number' ? actual - account.expectedClosingBalance : undefined;
+        const difference = hasActualBalance(account) ? account.difference : typeof actual === 'number' ? actual - account.expectedClosingBalance : undefined;
         const status =
           hasActualBalance(account)
             ? account.status
@@ -66,11 +78,11 @@ export default function ReconciliationAccounts({
           <section key={accountId} className="rounded-2xl border border-slate-700 bg-slate-950/60 p-5 space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-slate-800 p-2 text-emerald-400"><Icon className="h-5 w-5" /></div>
+                <div className="rounded-xl bg-slate-800 p-2 text-brand-600"><Icon className="h-5 w-5" /></div>
                 <div>
-                  <h4 className="font-bold text-white">{accountLabels[account.accountType]} ({account.currency})</h4>
+                  <h4 className="font-bold text-white">{account.accountName || accountLabels[account.accountType]} ({account.currency})</h4>
                   <p className="text-[11px] text-slate-500">
-                    {account.provider === 'CASH_DRAWER' ? 'Cash Drawer' : WALLET_LABELS[account.provider]}
+                    {account.provider === 'CASH_DRAWER' ? 'Cash Drawer' : WALLET_LABELS[account.provider as WalletProvider] || account.provider}
                   </p>
                 </div>
               </div>
@@ -82,8 +94,8 @@ export default function ReconciliationAccounts({
                 <p className="text-slate-500">Opening Balance</p>
                 <p className="mt-1 font-bold text-slate-200">{formatAmount(account.currency, account.openingBalance)}</p>
               </div>
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
-                <p className="text-emerald-400">Expected Closing</p>
+              <div className="rounded-xl border border-line bg-white p-3">
+                <p className="text-brand-600">Expected Closing</p>
                 <p className="mt-1 font-bold text-emerald-300">{formatAmount(account.currency, account.expectedClosingBalance)}</p>
               </div>
             </div>
@@ -91,9 +103,9 @@ export default function ReconciliationAccounts({
             <div className="space-y-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Confirmed movements</p>
               {account.confirmedMovements.map((item) => (
-                <div key={item.movementType} className="flex items-center justify-between gap-3 text-xs">
+                <div key={`${item.movementType}:${item.direction}`} className="flex items-center justify-between gap-3 text-xs">
                   <span className="text-slate-400">{movementLabels[item.movementType]} ({item.transactionCount})</span>
-                  <span className={item.direction === 'IN' ? 'font-semibold text-emerald-400' : 'font-semibold text-amber-400'}>
+                  <span className={item.direction === 'IN' ? 'font-semibold text-brand-600' : 'font-semibold text-amber-400'}>
                     {item.direction === 'IN' ? '+' : '-'}{formatAmount(item.currency, item.amount)}
                   </span>
                 </div>
@@ -111,7 +123,7 @@ export default function ReconciliationAccounts({
                   step={account.currency === 'UGX' ? '1' : '0.01'}
                   value={enteredActual ?? ''}
                   onChange={(event) => onActualChange(accountId, event.target.value === '' ? '' : Number(event.target.value))}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 font-bold text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 font-bold text-white outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                   aria-label={`Actual closing balance for ${accountLabels[account.accountType]} in ${account.currency}`}
                 />
               </div>

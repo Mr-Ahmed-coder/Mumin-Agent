@@ -1,68 +1,68 @@
 'use client';
 
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { CalendarDays, ChevronRight, CircleDollarSign, Wallet } from 'lucide-react';
 import { api } from '@/lib/api';
 import { CashSession } from '@/types';
-import { Wallet, AlertTriangle, Plus, ArrowDownRight, ArrowUpRight } from 'lucide-react';
-import Link from 'next/link';
+import { useAuth } from '@/providers/AuthProvider';
 
-export default function Navbar() {
-  const { data: sessionData, refetch } = useQuery<{ data: CashSession | null }>({
-    queryKey: ['activeCashSession'],
-    queryFn: async () => {
-      const res = await api.get('/cash-sessions/current');
-      return res.data;
-    },
+export default function Navbar({ compact = false }: { compact?: boolean }) {
+  const { user } = useAuth();
+  const isCashier = user?.role === 'CASHIER';
+  const { data: sessionData, isLoading, isError } = useQuery<{ data: CashSession | null }>({
+    queryKey: ['activeCashSession', user?._id],
+    queryFn: async () => (await api.get('/cash-sessions/current')).data,
+    enabled: Boolean(user && isCashier),
   });
 
   const activeSession = sessionData?.data;
+  const currentCash = activeSession?.currentCashBalance ?? activeSession?.openingCash;
+  const today = new Intl.DateTimeFormat('en', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date());
 
   return (
-    <header className="h-16 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30">
-      {/* Header Info */}
-      <div className="flex items-center gap-4">
-        <h2 className="text-sm font-semibold text-slate-300">Agent Cash Exchange Workspace</h2>
+    <header className="sticky top-0 z-30 flex min-h-20 items-center justify-between gap-4 border-b border-slate-800/80 bg-white/90 px-4 pl-[4.75rem] backdrop-blur-xl sm:px-6 sm:pl-[4.75rem] lg:top-4 lg:mx-4 lg:mt-4 lg:rounded-2xl lg:border lg:px-6 lg:shadow-card">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-extrabold text-ink">Financial Operations</p>
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+          <CalendarDays className="h-3.5 w-3.5" />
+          <span>{today}</span>
+          <span className="hidden sm:inline">· Secure workspace</span>
+        </div>
       </div>
 
-      {/* Cash Drawer Status Banner */}
-      <div className="flex items-center gap-4">
-        {activeSession ? (
-          <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-1.5 rounded-xl">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <div className="text-xs">
-              <span className="text-slate-400">Available Cash (UGX): </span>
-              <span className="font-bold text-emerald-400">
-                UGX {(activeSession.currentCashBalance ?? activeSession.openingCash).toLocaleString()}
-              </span>
-            </div>
-            <Link
-              href="/cash-sessions"
-              className="ml-2 text-xs font-semibold text-emerald-400 hover:underline"
-            >
-              Manage
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        {isCashier && !compact && (
+          isLoading ? (
+            <div className="hidden h-10 w-44 animate-pulse rounded-xl bg-slate-800 sm:block" aria-label="Loading shift status" />
+          ) : activeSession ? (
+            <Link href="/cash-sessions" className="hidden items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-2 transition-colors hover:bg-blue-100 sm:flex">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white"><Wallet className="h-4 w-4" /></div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Shift open</p>
+                <p className="text-xs font-extrabold text-ink">UGX {Number(currentCash || 0).toLocaleString()}</p>
+              </div>
             </Link>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 px-3.5 py-1.5 rounded-xl">
-            <AlertTriangle className="w-4 h-4 text-amber-400 animate-bounce" />
-            <span className="text-xs text-amber-300 font-medium">No Active Cash Shift</span>
-            <Link
-              href="/cash-sessions"
-              className="ml-1 text-xs font-bold bg-amber-500 text-slate-950 px-2.5 py-1 rounded-lg hover:bg-amber-400 transition-colors"
-            >
-              Open Shift
+          ) : (
+            <Link href="/cash-sessions" className="hidden items-center gap-2 rounded-xl border border-line bg-white px-3.5 py-2 text-xs font-bold text-ink hover:bg-brand-50 sm:flex">
+              {isError ? 'Check shift' : 'Open shift'} <ChevronRight className="h-4 w-4" />
             </Link>
-          </div>
+          )
         )}
 
-        {/* Quick Action Button */}
-        <Link
-          href="/transactions/new"
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          New Exchange
-        </Link>
+        {isCashier && activeSession && !compact && (
+          <Link href="/transactions/new" className="hidden min-h-11 items-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:bg-brand-700 md:flex">
+            <CircleDollarSign className="h-4 w-4" /> New Transaction
+          </Link>
+        )}
+
+        <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-white p-1.5 pr-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-black text-white">{user?.name?.charAt(0) || 'M'}</div>
+          <div className="hidden text-left sm:block">
+            <p className="max-w-28 truncate text-xs font-bold text-ink">{user?.name}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{user?.role}</p>
+          </div>
+        </div>
       </div>
     </header>
   );

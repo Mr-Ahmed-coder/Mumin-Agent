@@ -141,7 +141,7 @@ export default function ReportsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6 print:hidden">
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                <BarChart3 className="w-6 h-6 text-emerald-400" />
+                <BarChart3 className="w-6 h-6 text-brand-600" />
                 Reports & Financial Analytics
               </h1>
               <p className="text-sm text-slate-400">
@@ -159,14 +159,14 @@ export default function ReportsPage() {
               </button>
               <button
                 onClick={handleExportCSV}
-                className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-teal-400 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all"
+                className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-ink font-semibold px-4 py-2.5 rounded-xl text-sm transition-all"
               >
                 <FileText className="w-4 h-4" />
                 Export CSV
               </button>
               <button
                 onClick={handleExportExcel}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-emerald-600/20 transition-all"
+                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-[#ffffff] font-semibold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-brand-600/20 transition-all"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 Export Excel (.xlsx)
@@ -185,7 +185,7 @@ export default function ReportsPage() {
           {/* Filters Bar */}
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4 print:hidden">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-              <Filter className="w-4 h-4 text-emerald-400" />
+              <Filter className="w-4 h-4 text-brand-600" />
               Report Presets & Dimensions Filter
             </div>
 
@@ -195,7 +195,7 @@ export default function ReportsPage() {
                 onClick={() => setDateRangePreset('today')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   dateRangePreset === 'today'
-                    ? 'bg-emerald-500 text-slate-950 font-bold'
+                    ? 'bg-brand-600 text-[#ffffff] font-bold'
                     : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -205,7 +205,7 @@ export default function ReportsPage() {
                 onClick={() => setDateRangePreset('weekly')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   dateRangePreset === 'weekly'
-                    ? 'bg-emerald-500 text-slate-950 font-bold'
+                    ? 'bg-brand-600 text-[#ffffff] font-bold'
                     : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -215,7 +215,7 @@ export default function ReportsPage() {
                 onClick={() => setDateRangePreset('monthly')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   dateRangePreset === 'monthly'
-                    ? 'bg-emerald-500 text-slate-950 font-bold'
+                    ? 'bg-brand-600 text-[#ffffff] font-bold'
                     : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -225,7 +225,7 @@ export default function ReportsPage() {
                 onClick={() => setDateRangePreset('custom')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   dateRangePreset === 'custom'
-                    ? 'bg-emerald-500 text-slate-950 font-bold'
+                    ? 'bg-brand-600 text-[#ffffff] font-bold'
                     : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -323,7 +323,7 @@ export default function ReportsPage() {
 
             <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-1 print:bg-white print:border-gray-300">
               <span className="text-xs font-semibold text-slate-400 uppercase print:text-black">Gross Fees Collected</span>
-              <p className="text-2xl font-extrabold text-teal-400 print:text-black">
+              <p className="text-2xl font-extrabold text-ink print:text-black">
                 ${summary?.totalServiceFees?.toLocaleString() || '0'}
               </p>
             </div>
@@ -335,9 +335,9 @@ export default function ReportsPage() {
               </p>
             </div>
 
-            <div className="p-5 bg-slate-900 border border-emerald-500/30 rounded-2xl shadow-xl space-y-1 print:bg-white print:border-gray-300">
-              <span className="text-xs font-semibold text-emerald-400 uppercase print:text-black">Net Fee Profit</span>
-              <p className="text-2xl font-extrabold text-emerald-400 print:text-black">
+            <div className="p-5 bg-slate-900 border border-line rounded-2xl shadow-xl space-y-1 print:bg-white print:border-gray-300">
+              <span className="text-xs font-semibold text-brand-600 uppercase print:text-black">Net Fee Profit</span>
+              <p className="text-2xl font-extrabold text-brand-600 print:text-black">
                 ${summary?.totalProfit?.toLocaleString() || '0'}
               </p>
             </div>
@@ -348,7 +348,7 @@ export default function ReportsPage() {
             {/* Top Cashiers Audit Performance Table */}
             <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4 print:bg-white print:border-gray-300">
               <h3 className="text-base font-bold text-white print:text-black flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-emerald-400" />
+                <UserCheck className="w-4 h-4 text-brand-600" />
                 Cashier Performance Yield
               </h3>
 
@@ -372,7 +372,7 @@ export default function ReportsPage() {
                         <tr key={i} className="hover:bg-slate-800/30">
                           <td className="py-2.5 px-3 font-sans font-medium text-slate-200 print:text-black">{c.name}</td>
                           <td className="py-2.5 px-3 text-right text-slate-100 print:text-black">${c.volume.toLocaleString()}</td>
-                          <td className="py-2.5 px-3 text-right text-teal-400 print:text-black">${c.fee.toLocaleString()}</td>
+                          <td className="py-2.5 px-3 text-right text-ink print:text-black">${c.fee.toLocaleString()}</td>
                           <td className="py-2.5 px-3 text-right text-slate-400 print:text-black">{c.count}</td>
                         </tr>
                       ))
@@ -422,7 +422,7 @@ export default function ReportsPage() {
                             {WALLET_LABELS[w.provider as WalletProvider] || w.provider}
                           </td>
                           <td className="py-2.5 px-3 text-right text-slate-100 print:text-black">${w.volume.toLocaleString()}</td>
-                          <td className="py-2.5 px-3 text-right text-teal-400 print:text-black">${w.fee.toLocaleString()}</td>
+                          <td className="py-2.5 px-3 text-right text-ink print:text-black">${w.fee.toLocaleString()}</td>
                           <td className="py-2.5 px-3 text-right text-slate-400 print:text-black">{w.count}</td>
                         </tr>
                       ))
@@ -435,7 +435,7 @@ export default function ReportsPage() {
             {/* Top Customer Leaderboard */}
             <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4 print:bg-white print:border-gray-300">
               <h3 className="text-base font-bold text-white print:text-black flex items-center gap-2">
-                <Users className="w-4 h-4 text-teal-400" />
+                <Users className="w-4 h-4 text-ink" />
                 Top Customer Volume Leaderboard
               </h3>
 
@@ -460,10 +460,10 @@ export default function ReportsPage() {
                             {cust.name}
                             <div className="text-[10px] text-slate-500 print:text-gray-600">{cust.phone}</div>
                           </td>
-                          <td className="py-2.5 px-3 text-right font-bold text-emerald-400 print:text-black">
+                          <td className="py-2.5 px-3 text-right font-bold text-brand-600 print:text-black">
                             ${cust.volume.toLocaleString()}
                           </td>
-                          <td className="py-2.5 px-3 text-right text-teal-400 print:text-black">${cust.fee.toLocaleString()}</td>
+                          <td className="py-2.5 px-3 text-right text-ink print:text-black">${cust.fee.toLocaleString()}</td>
                         </tr>
                       ))
                     )}
@@ -508,7 +508,7 @@ export default function ReportsPage() {
                   ) : (
                     transactions.map((t) => (
                       <tr key={t._id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3.5 px-4 font-semibold text-emerald-400 text-xs print:text-black">
+                        <td className="py-3.5 px-4 font-semibold text-brand-600 text-xs print:text-black">
                           {t.transactionNumber}
                         </td>
                         <td className="py-3.5 px-4 text-slate-300 text-xs font-sans print:text-black">
@@ -524,10 +524,10 @@ export default function ReportsPage() {
                         <td className="py-3.5 px-4 text-right font-semibold text-slate-100 print:text-black">
                           ${t.amountReceived.toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-medium text-teal-400 print:text-black">
+                        <td className="py-3.5 px-4 text-right font-medium text-ink print:text-black">
                           ${t.serviceFee.toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-bold text-emerald-400 print:text-black">
+                        <td className="py-3.5 px-4 text-right font-bold text-brand-600 print:text-black">
                           ${t.cashPaid.toLocaleString()}
                         </td>
                         <td className="py-3.5 px-4 text-slate-300 font-sans text-xs print:text-black">

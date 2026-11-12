@@ -7,6 +7,7 @@ import { UserRole } from '../constants/roles';
 
 const router = Router();
 router.use(authenticate);
+router.get('/archive', authorize(UserRole.ADMIN), listCustomerDeposits);
 router.get('/', listCustomerDeposits);
 router.get('/:id', getCustomerDeposit);
 router.post('/deposit', authorize(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER), validateRequest(recordCustomerDepositSchema), recordCustomerDeposit);
