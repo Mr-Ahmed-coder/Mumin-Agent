@@ -29,9 +29,30 @@ app.set('trust proxy', 1);
 
 // Security Middlewares
 app.use(helmet());
+
+const configuredOrigins = env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
+
 app.use(
   cors({
-    origin: env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (configuredOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      // In demo mode, automatically allow the deployed Vercel demo preview and any vercel preview domains
+      if (
+        env.DEMO_MODE === 'true' &&
+        (origin.endsWith('.vercel.app') ||
+         origin.startsWith('https://mumin-system') ||
+         origin === 'http://localhost:3000')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
   })
 );
