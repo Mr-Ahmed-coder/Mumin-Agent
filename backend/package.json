@@ -7,20 +7,28 @@
   },
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
+    "build:all": "tsc",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "seed:admin": "npm run build && node dist/seeders/bootstrapAdmin.js",
     "seed:demo": "npm run build && node dist/seeders/seedDemo.js",
-    "test": "npm run build && node --test dist/tests/*.test.js",
-    "test:authorization": "npm run build && node --test dist/tests/authorization.test.js",
-    "test:currency-consistency": "npm run build && node --test dist/tests/currencyConsistency.test.js",
-    "test:opening-balances": "npm run build && node --test dist/tests/openingBalances.test.js",
-    "test:reconciliation": "npm run build && node --test dist/tests/reconciliation.test.js",
-    "test:internet-credit": "npm run build && node --test dist/tests/internetCredit.test.js",
-    "test:customer-deposits": "npm run build && node --test dist/tests/customerDeposit.test.js"
+    "test": "npm run build:all && node --test dist/tests/*.test.js",
+    "test:authorization": "npm run build:all && node --test dist/tests/authorization.test.js",
+    "test:currency-consistency": "npm run build:all && node --test dist/tests/currencyConsistency.test.js",
+    "test:opening-balances": "npm run build:all && node --test dist/tests/openingBalances.test.js",
+    "test:reconciliation": "npm run build:all && node --test dist/tests/reconciliation.test.js",
+    "test:internet-credit": "npm run build:all && node --test dist/tests/internetCredit.test.js",
+    "test:customer-deposits": "npm run build:all && node --test dist/tests/customerDeposit.test.js"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^22.0.0",
+    "@types/pdfkit": "^0.13.4",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -34,18 +42,11 @@
     "pdfkit": "^0.15.0",
     "pino": "^9.3.1",
     "pino-pretty": "^11.2.1",
+    "typescript": "^5.5.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/cookie-parser": "^1.4.7",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.6",
-    "@types/node": "^20.14.12",
-    "@types/pdfkit": "^0.13.4",
     "mongodb-memory-server-core": "^11.3.0",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.5.4"
+    "ts-node-dev": "^2.0.0"
   }
 }
